@@ -1,189 +1,297 @@
-'use client'
-
-import { useState } from 'react'
-import Header from '@/components/Header'
-import MetricsRow from '@/components/dashboard/MetricsRow'
-import QueuePanel from '@/components/dashboard/QueuePanel'
-import RevenueChart from '@/components/dashboard/RevenueChart'
-import AIInsightPanel from '@/components/dashboard/AIInsightPanel'
-import { appointments } from '@/lib/mock-data'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { redirect } from 'next/navigation'
+import { Car, DollarSign, Users, Clock } from 'lucide-react'
+import DashboardHeader from './components/DashboardHeader'
+import MetricCard from './components/MetricCard'
+import RevenueChart from './components/RevenueChart'
+import FilaCard from './components/FilaCard'
+import QuickActions from './components/QuickActions'
 import { formatCurrency } from '@/lib/utils'
-import { Calendar, ChevronRight, MessageCircle } from 'lucide-react'
 
-export default function DashboardPage() {
-  const [showAddModal, setShowAddModal] = useState(false)
+async function getDashboardData() {
+  const supabase = createServerSupabaseClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) redirect('/login')
+
+  const { data: lavaJato } = await supabase
+    .from('lava_jatos')
+    .select('id, nome')
+    .eq('user_id', session.user.id)
+    .single()
+
+  if (!lavaJato) return { error: 'Lava-jato não encontrado' }
+
+  const lavaJatoId = lavaJato.id
+  const now = new Date()
+  const todayStr = now.toISOString().slice(0, 10)
+
+  const { count: atendimentosHoje } = await supabase
+    .from('atendimentos')
+    .select('id', { count: 'exact', head: true })
+    .eq('lava_jato_id', lavaJatoId)
+    .gte('created_at', `${todayStr}T00:00:00`)
+    .lte('created_at', `${todayStr}T23:59:59`)
+
+  const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01T00:00:00`
+  const { data: receitaRows } = await supabase
+    .from('atendimentos')
+    .select('preco_final')
+    .eq('lava_jato_id', lavaJatoId)
+    .eq('status', 'concluido')
+    .gte('created_at', startOfMonth)
+
+  const receitaMes = receitaRows?.reduce((sum: number, r: any) => sum + (r.preco_final || 0), 0) ?? 0
+
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { count: clientesNovos } = await supabase
+    .from('clientes')
+    .select('id', { count: 'exact', head: true })
+    .eq('lava_jato_id', lavaJatoId)
+    .gte('created_at', weekAgo)
+
+  const { data: filaAtual } = await supabase
+    .from('atendimentos')
+    .select('id, cliente_nome, placa, modelo, cor, status, created_at, clientes(nome), servicos(nome)')
+    .eq('lava_jato_id', lavaJatoId)
+    .in('status', ['aguardando', 'em_andamento'])
+    .order('created_at', { ascending: true })
+
+  const filaFormatted = (filaAtual ?? []).map((a: any) => ({
+    id: a.id,
+    cliente_nome: a.clientes?.nome ?? a.cliente_nome ?? 'Cliente',
+    servico_nome: a.servicos?.nome,
+    placa: a.placa,
+    modelo: a.modelo,
+    status: a.status,
+    created_at: a.created_at,
+  }))
+
+  const { data: topServicosRaw } = await supabase
+    .from('atendimentos')
+    .select('servico_id, preco_final, servicos(nome)')
+    .eq('lava_jato_id', lavaJatoId)
+    .eq('status', 'concluido')
+
+  const servicoMap: Record<string, { nome: string; count: number; receita: number }> = {}
+  for (const row of topServicosRaw ?? []) {
+    const id = row.servico_id
+    const nome = (row as any).servicos?.nome ?? 'Serviço'
+    if (!id) continue
+    if (!servicoMap[id]) servicoMap[id] = { nome, count: 0, receita: 0 }
+    servicoMap[id].count++
+    servicoMap[id].receita += row.preco_final ?? 0
+  }
+  const topServicos = Object.values(servicoMap).sort((a, b) => b.count - a.count).slice(0, 5)
+
+  const days: Array<{ date: string; _iso: string; receita: number }> = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+    const dateStr = d.toISOString().slice(0, 10)
+    const label = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })
+    days.push({ date: label, _iso: dateStr, receita: 0 })
+  }
+
+  const { data: receitaDias } = await supabase
+    .from('atendimentos')
+    .select('created_at, preco_final')
+    .eq('lava_jato_id', lavaJatoId)
+    .eq('status', 'concluido')
+    .gte('created_at', days[0]._iso + 'T00:00:00')
+
+  for (const r of receitaDias ?? []) {
+    const iso = r.created_at.slice(0, 10)
+    const day = days.find(d => d._iso === iso)
+    if (day) day.receita += r.preco_final ?? 0
+  }
+
+  const receitaUltimos7Dias = days.map(({ date, receita }) => ({ date, receita }))
+  const sparklineReceita = receitaUltimos7Dias.map(d => d.receita)
+
+  return {
+    nomeLavaJato: lavaJato.nome ?? 'Lava-Jato',
+    atendimentosHoje: atendimentosHoje ?? 0,
+    receitaMes,
+    clientesNovos: clientesNovos ?? 0,
+    filaAtual: filaFormatted,
+    topServicos,
+    receitaUltimos7Dias,
+    sparklineReceita,
+  }
+}
+
+function getGreeting(): string {
+  const h = new Date().getHours()
+  if (h < 12) return 'Bom dia'
+  if (h < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+export default async function DashboardPage() {
+  const data = await getDashboardData()
+
+  if ('error' in data) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-red-400">{(data as any).error}</p>
+      </div>
+    )
+  }
+
+  const {
+    nomeLavaJato,
+    atendimentosHoje,
+    receitaMes,
+    clientesNovos,
+    filaAtual,
+    topServicos,
+    receitaUltimos7Dias,
+    sparklineReceita,
+  } = data
+
+  const greeting = getGreeting()
+  const subtitle = new Date().toLocaleDateString('pt-BR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
+
+  // Capitalise first letter
+  const subtitleCap = subtitle.charAt(0).toUpperCase() + subtitle.slice(1)
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <Header
-        title="Dashboard"
-        subtitle="Sexta-feira, 15 de maio de 2026"
-        action={{ label: 'Adicionar à fila', onClick: () => setShowAddModal(true) }}
-      />
+      <DashboardHeader subtitle={subtitleCap} />
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-5">
+
+        {/* Welcome + AI Insight row */}
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Welcome */}
+          <div
+            className="flex-1 rounded-2xl px-5 py-4 flex items-center gap-3"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,212,255,0.08) 0%, rgba(79,142,255,0.05) 100%)',
+              border: '1px solid rgba(0,212,255,0.15)',
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+              style={{ background: 'rgba(0,212,255,0.12)' }}
+            >
+              👋
+            </div>
+            <div>
+              <p className="text-white font-semibold text-sm">
+                {greeting}, <span style={{ color: '#00d4ff' }}>{nomeLavaJato}</span>!
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">{subtitleCap}</p>
+            </div>
+          </div>
+
+          {/* AI Insight */}
+          <div
+            className="flex-1 rounded-2xl px-5 py-4 flex items-start gap-3"
+            style={{
+              background: 'rgba(255,214,0,0.04)',
+              border: '1px solid rgba(255,214,0,0.15)',
+            }}
+          >
+            <span className="text-lg flex-shrink-0">💡</span>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#ffd600' }}>Insight IA</p>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                Seu horário mais lucrativo é entre <strong className="text-white">10h–12h</strong>. Considere adicionar 1 funcionário nesse período.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Metrics */}
-        <MetricsRow />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <MetricCard
+            title="Atendimentos Hoje"
+            value={atendimentosHoje}
+            icon={<Car size={16} />}
+            color="cyan"
+            sparkline={[3, 5, 4, 8, 6, atendimentosHoje > 0 ? atendimentosHoje : 7, atendimentosHoje]}
+            change={atendimentosHoje > 0 ? `+${atendimentosHoje} hoje` : 'Nenhum ainda'}
+            tooltip="Atendimentos registrados hoje"
+          />
+          <MetricCard
+            title="Receita do Mês"
+            value={formatCurrency(receitaMes)}
+            icon={<DollarSign size={16} />}
+            color="green"
+            sparkline={sparklineReceita}
+            change={receitaMes > 0 ? '+' + formatCurrency(receitaMes) + ' acumulado' : 'Sem receita ainda'}
+            tooltip="Receita acumulada no mês"
+          />
+          <MetricCard
+            title="Clientes Novos (7 dias)"
+            value={clientesNovos}
+            icon={<Users size={16} />}
+            color="yellow"
+            sparkline={[1, 2, 1, 3, 2, clientesNovos > 0 ? clientesNovos : 2, clientesNovos]}
+            change={clientesNovos > 0 ? `+${clientesNovos} esta semana` : 'Nenhum esta semana'}
+            tooltip="Novos clientes cadastrados nos últimos 7 dias"
+          />
+          <MetricCard
+            title="Na Fila Agora"
+            value={filaAtual.length}
+            icon={<Clock size={16} />}
+            color="red"
+            sparkline={[2, 4, 3, 5, 4, 3, filaAtual.length]}
+            change={filaAtual.length > 0 ? `${filaAtual.length} veículo${filaAtual.length !== 1 ? 's' : ''} aguardando` : 'Fila vazia'}
+            tooltip="Veículos ativos na fila agora"
+          />
+        </div>
 
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          {/* Queue - takes 2 cols */}
+          {/* Fila — 2 cols */}
           <div className="xl:col-span-2">
-            <QueuePanel />
+            <FilaCard atendimentos={filaAtual} />
           </div>
 
           {/* Right column */}
           <div className="space-y-4">
-            <AIInsightPanel />
+            <QuickActions />
 
-            {/* Next appointments */}
-            <div className="glass rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Calendar size={15} className="text-cyan-400" />
-                  <h2 className="font-semibold text-white text-sm">Próximos Agendamentos</h2>
+            {topServicos.length > 0 && (
+              <div
+                className="rounded-2xl p-5"
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(26,26,46,0.8)',
+                  backdropFilter: 'blur(12px)',
+                }}
+              >
+                <h2 className="font-semibold text-white text-sm mb-4">Top Serviços</h2>
+                <div className="space-y-2">
+                  {topServicos.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between py-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          style={{ background: 'rgba(0,212,255,0.15)', color: '#00d4ff' }}
+                        >
+                          {i + 1}
+                        </span>
+                        <span className="text-sm text-gray-300 truncate">{s.nome}</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                        <span className="text-xs text-gray-500">{s.count}x</span>
+                        <span className="text-xs font-semibold text-green-400">{formatCurrency(s.receita)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <button className="text-xs text-gray-500 hover:text-cyan-400 transition-colors">Ver todos</button>
               </div>
-
-              <div className="space-y-2">
-                {appointments.slice(0, 3).map(apt => (
-                  <div key={apt.id}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-colors">
-                    <div className="w-1 h-8 rounded-full bg-cyan-400/60 flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">{apt.customer.name}</p>
-                      <p className="text-xs text-gray-500">{apt.service}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-xs font-mono text-cyan-400">
-                        {new Date(apt.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      <p className="text-xs text-green-400 font-semibold">{formatCurrency(apt.price)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button className="w-full mt-3 py-2 rounded-xl text-xs text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-1"
-                style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                Gerenciar agenda
-                <ChevronRight size={13} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Charts row */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <RevenueChart />
-
-          {/* WhatsApp summary */}
-          <div className="glass rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,211,102,0.15)' }}>
-                <MessageCircle size={14} style={{ color: '#25d366' }} />
-              </div>
-              <div>
-                <h2 className="font-semibold text-white text-sm">WhatsApp Bot</h2>
-                <p className="text-xs text-gray-500">Hoje</p>
-              </div>
-              <div className="ml-auto flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 live-dot"></span>
-                <span className="text-xs text-green-400 font-semibold">Ativo</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { label: 'Mensagens', value: '47', color: 'text-white' },
-                { label: 'Agendamentos', value: '8', color: 'text-cyan-400' },
-                { label: 'Notificações', value: '18', color: 'text-green-400' },
-              ].map(m => (
-                <div key={m.label} className="text-center p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  <p className={`text-xl font-bold ${m.color}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{m.value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{m.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Recent messages */}
-            <div className="space-y-2">
-              {[
-                { name: 'Bruno Lima', msg: 'Meu carro tá pronto?', time: '14:32', type: 'recv' },
-                { name: 'LAVAI Bot', msg: '✅ Sim! Pode buscar, está pronto.', time: '14:32', type: 'sent' },
-                { name: 'Rafael Souza', msg: 'Qual o tempo de espera?', time: '14:18', type: 'recv' },
-              ].map((m, i) => (
-                <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-xl" style={{ background: 'rgba(37,211,102,0.04)', border: '1px solid rgba(37,211,102,0.08)' }}>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0"
-                    style={{ background: m.type === 'recv' ? 'rgba(255,255,255,0.1)' : 'rgba(37,211,102,0.2)' }}>
-                    {m.type === 'recv' ? '👤' : '🤖'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold" style={{ color: m.type === 'sent' ? '#25d366' : '#fff' }}>{m.name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{m.msg}</p>
-                  </div>
-                  <span className="text-xs text-gray-600 flex-shrink-0">{m.time}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Revenue Chart */}
+        <RevenueChart data={receitaUltimos7Dias} />
       </div>
-
-      {/* Add to queue modal (simple) */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-          onClick={() => setShowAddModal(false)}>
-          <div className="glass rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-              Adicionar à Fila
-            </h3>
-            <div className="space-y-3">
-              {[
-                { label: 'Nome do cliente', placeholder: 'João Silva', type: 'text' },
-                { label: 'Placa do veículo', placeholder: 'ABC-1234', type: 'text' },
-                { label: 'WhatsApp', placeholder: '(11) 99999-9999', type: 'tel' },
-              ].map(f => (
-                <div key={f.label}>
-                  <label className="text-xs text-gray-400 font-medium block mb-1">{f.label}</label>
-                  <input
-                    type={f.type}
-                    placeholder={f.placeholder}
-                    className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:ring-1 focus:ring-cyan-400/50"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  />
-                </div>
-              ))}
-              <div>
-                <label className="text-xs text-gray-400 font-medium block mb-1">Serviço</label>
-                <select className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:ring-1 focus:ring-cyan-400/50"
-                  style={{ background: '#12152a', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <option>Lavagem Simples — R$40</option>
-                  <option>Lavagem Completa — R$80</option>
-                  <option>Lavagem + Cera — R$110</option>
-                  <option>Polimento — R$180</option>
-                  <option>Higienização Interna — R$120</option>
-                  <option>Cristalização — R$250</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setShowAddModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white transition-colors"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-                Cancelar
-              </button>
-              <button onClick={() => setShowAddModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-black transition-all hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #00d4ff, #4f8eff)' }}>
-                Adicionar ✓
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

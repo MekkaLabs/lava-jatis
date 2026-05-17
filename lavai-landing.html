@@ -3,832 +3,1103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LAVAI — O sistema operacional do lava-jato moderno</title>
-<meta name="description" content="Gerencie sua fila, financeiro e equipe em um só lugar. IA que trabalha por você. Teste grátis por 14 dias.">
-<meta property="og:title" content="LAVAI — O sistema operacional do lava-jato moderno">
-<meta property="og:description" content="400 mil lava-jatos no Brasil ainda operam no caos. Vamos mudar isso.">
-<meta property="og:image" content="https://placehold.co/1200x630/08090f/00d4ff?text=LAVAI">
+<title>LAVAI — Seu lava-jato no automático</title>
+
+<!-- Preconnect for performance -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- SEO Primary Meta Tags -->
+<meta name="description" content="LAVAI — Sistema inteligente para lava-jatos. Do agendamento ao pagamento, tudo no automático. Mais de 400 lava-jatos já usam. Comece grátis por 14 dias.">
+<meta name="keywords" content="lava-jato, sistema para lava-jato, gestão lava-jato, software lava-jato, agendamento lava-jato, financeiro lava-jato, LAVAI">
+<meta name="author" content="LAVAI">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://lavai.com.br/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lavai.com.br/">
+<meta property="og:title" content="LAVAI — Seu lava-jato no automático">
+<meta property="og:description" content="Do agendamento ao pagamento, tudo automatizado. Mais de 400 lava-jatos já usam o LAVAI para faturar mais e trabalhar menos.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="LAVAI">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://lavai.com.br/">
+<meta name="twitter:title" content="LAVAI — Seu lava-jato no automático">
+<meta name="twitter:description" content="Do agendamento ao pagamento, tudo automatizado. Comece grátis por 14 dias.">
+<meta name="twitter:image" content="/og-image.png">
+
+<!-- Theme -->
+<meta name="theme-color" content="#08090f">
+
+<!-- JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "LAVAI",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "url": "https://lavai.com.br",
+  "description": "Sistema de gestão inteligente para lava-jatos brasileiros. Do agendamento ao pagamento, tudo no automático.",
+  "inLanguage": "pt-BR",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.9",
+    "reviewCount": "412",
+    "bestRating": "5"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "BRL",
+    "description": "14 dias grátis. Planos a partir de R$97/mês."
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "LAVAI",
+    "url": "https://lavai.com.br"
+  },
+  "areaServed": { "@type": "Country", "name": "Brazil" }
+}
+</script>
+
 <style>
-  :root {
-    --bg: #08090f;
-    --bg2: #0e0f1a;
-    --bg3: #13141f;
-    --cyan: #00d4ff;
-    --green: #00e676;
-    --cyan-dim: rgba(0,212,255,0.12);
-    --cyan-border: rgba(0,212,255,0.25);
-    --green-dim: rgba(0,230,118,0.1);
-    --white: #ffffff;
-    --gray1: #e2e4ee;
-    --gray2: #8b8fa8;
-    --gray3: #3a3d52;
-    --radius: 14px;
-    --radius-sm: 8px;
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--bg);
-    color: var(--gray1);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    overflow-x: hidden;
-  }
-
-  a { color: inherit; text-decoration: none; }
-
-  /* NAV */
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 5%;
-    height: 64px;
-    background: rgba(8,9,15,0.85);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-
-  .nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    color: var(--white);
-  }
-
-  .nav-logo-icon {
-    width: 32px; height: 32px;
-    background: var(--cyan);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-  }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    list-style: none;
-  }
-
-  .nav-links a {
-    font-size: 14px;
-    color: var(--gray2);
-    transition: color .2s;
-  }
-
-  .nav-links a:hover { color: var(--white); }
-
-  .nav-cta {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 22px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all .2s;
-    text-decoration: none;
-  }
-
-  .btn-ghost {
-    background: transparent;
-    color: var(--gray2);
-    border: 1px solid var(--gray3);
-  }
-
-  .btn-ghost:hover { color: var(--white); border-color: var(--gray2); }
-
-  .btn-primary {
-    background: var(--cyan);
-    color: #000;
-  }
-
-  .btn-primary:hover { background: #33dcff; transform: translateY(-1px); }
-
-  .btn-primary-lg {
-    padding: 14px 32px;
-    font-size: 16px;
-    border-radius: 10px;
-    background: var(--cyan);
-    color: #000;
-    font-weight: 700;
-  }
-
-  .btn-primary-lg:hover { background: #33dcff; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,212,255,0.3); }
-
-  .btn-outline-lg {
-    padding: 14px 32px;
-    font-size: 16px;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--white);
-    font-weight: 600;
-    border: 1px solid var(--gray3);
-  }
-
-  .btn-outline-lg:hover { border-color: var(--cyan); color: var(--cyan); }
-
-  /* HERO */
-  .hero {
-    padding: 140px 5% 100px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero::before {
-    content: '';
-    position: absolute;
-    top: -200px; left: 50%;
-    transform: translateX(-50%);
-    width: 800px; height: 600px;
-    background: radial-gradient(ellipse, rgba(0,212,255,0.08) 0%, transparent 65%);
-    pointer-events: none;
-  }
-
-  .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    background: var(--cyan-dim);
-    border: 1px solid var(--cyan-border);
-    border-radius: 100px;
-    font-size: 13px;
-    color: var(--cyan);
-    margin-bottom: 32px;
-  }
-
-  .hero-badge-dot {
-    width: 6px; height: 6px;
-    background: var(--cyan);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
-  }
-
-  .hero h1 {
-    font-size: clamp(38px, 6vw, 72px);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -2px;
-    color: var(--white);
-    margin-bottom: 24px;
-  }
-
-  .hero h1 span { color: var(--cyan); }
-
-  .hero-sub {
-    font-size: clamp(17px, 2.2vw, 22px);
-    color: var(--gray2);
-    max-width: 580px;
-    margin: 0 auto 48px;
-    line-height: 1.5;
-  }
-
-  .hero-actions {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .hero-stats {
-    display: flex;
-    justify-content: center;
-    gap: 48px;
-    margin-top: 72px;
-    flex-wrap: wrap;
-    padding-top: 48px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-  }
-
-  .hero-stat-item { text-align: center; }
-
-  .hero-stat-num {
-    font-size: 36px;
-    font-weight: 800;
-    color: var(--white);
-    letter-spacing: -1px;
-  }
-
-  .hero-stat-num span { color: var(--cyan); }
-
-  .hero-stat-label {
-    font-size: 13px;
-    color: var(--gray2);
-    margin-top: 4px;
-  }
-
-  /* MOCKUP */
-  .mockup-section {
-    padding: 0 5% 100px;
-    text-align: center;
-  }
-
-  .mockup-wrap {
-    max-width: 1000px;
-    margin: 0 auto;
-    background: var(--bg3);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 20px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .mockup-bar {
-    background: var(--bg2);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .mockup-dots { display: flex; gap: 6px; }
-
-  .mockup-dot {
-    width: 12px; height: 12px;
-    border-radius: 50%;
-  }
-
-  .mockup-dot:nth-child(1) { background: #ff5f57; }
-  .mockup-dot:nth-child(2) { background: #febc2e; }
-  .mockup-dot:nth-child(3) { background: #28c840; }
-
-  .mockup-url {
-    flex: 1;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 13px;
-    color: var(--gray2);
-    text-align: center;
-  }
-
-  .mockup-content {
-    padding: 24px;
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 0;
-    height: 460px;
-    text-align: left;
-  }
-
-  .mock-sidebar {
-    background: var(--bg2);
-    border-right: 1px solid rgba(255,255,255,0.06);
-    padding: 16px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .mock-logo-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    margin-bottom: 16px;
-  }
-
-  .mock-logo-sq {
-    width: 26px; height: 26px;
-    background: var(--cyan);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 800;
-    color: #000;
-  }
-
-  .mock-logo-text { font-size: 15px; font-weight: 700; color: var(--white); }
-
-  .mock-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--gray2);
-    cursor: pointer;
-  }
-
-  .mock-nav-item.active {
-    background: var(--cyan-dim);
-    color: var(--cyan);
-  }
-
-  .mock-nav-icon {
-    width: 18px; height: 18px;
-    opacity: 0.7;
-  }
-
-  .mock-main {
-    padding: 20px;
-    overflow: hidden;
-  }
-
-  .mock-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-
-  .mock-title { font-size: 18px; font-weight: 700; color: var(--white); }
-
-  .mock-badge {
-    background: var(--green-dim);
-    border: 1px solid rgba(0,230,118,0.3);
-    color: var(--green);
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 100px;
-    font-weight: 600;
-  }
-
-  .mock-cards {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .mock-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 10px;
-    padding: 14px;
-  }
-
-  .mock-card-label { font-size: 10px; color: var(--gray2); margin-bottom: 8px; }
-  .mock-card-value { font-size: 20px; font-weight: 800; color: var(--white); }
-  .mock-card-delta { font-size: 10px; color: var(--green); margin-top: 4px; }
-
-  .mock-queue {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-
-  .mock-queue-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 12px;
-    color: var(--gray2);
-    font-weight: 600;
-  }
-
-  .mock-queue-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    font-size: 12px;
-  }
-
-  .mock-queue-row:last-child { border-bottom: none; }
-
-  .mock-avatar {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .mock-queue-info { flex: 1; }
-  .mock-queue-name { color: var(--white); font-weight: 600; }
-  .mock-queue-plate { color: var(--gray2); font-size: 11px; }
-
-  .mock-status {
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 100px;
-    font-weight: 600;
-  }
-
-  .status-waiting { background: rgba(255,165,0,0.12); color: #ffa500; border: 1px solid rgba(255,165,0,0.25); }
-  .status-progress { background: var(--cyan-dim); color: var(--cyan); border: 1px solid var(--cyan-border); }
-  .status-done { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,230,118,0.25); }
-
-  /* PROBLEM */
-  .section { padding: 100px 5%; }
-
-  .section-label {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--cyan);
-    margin-bottom: 16px;
-  }
-
-  .section-title {
-    font-size: clamp(30px, 4vw, 48px);
-    font-weight: 800;
-    color: var(--white);
-    letter-spacing: -1.5px;
-    line-height: 1.15;
-    margin-bottom: 20px;
-  }
-
-  .section-sub {
-    font-size: 18px;
-    color: var(--gray2);
-    max-width: 520px;
-    line-height: 1.5;
-  }
-
-  .problems-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 20px;
-    margin-top: 60px;
-  }
-
-  .problem-card {
-    background: var(--bg3);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: var(--radius);
-    padding: 28px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .problem-emoji { font-size: 32px; margin-bottom: 16px; }
-
-  .problem-title {
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--white);
-    margin-bottom: 10px;
-  }
-
-  .problem-desc { font-size: 14px; color: var(--gray2); line-height: 1.6; }
-
-  /* FEATURES */
-  .features-section { padding: 80px 5%; background: var(--bg2); }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-    margin-top: 64px;
-  }
-
-  .feature-card {
-    background: var(--bg);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: var(--radius);
-    padding: 32px;
-    transition: border-color .2s, transform .2s;
-  }
-
-  .feature-card:hover {
-    border-color: var(--cyan-border);
-    transform: translateY(-4px);
-  }
-
-  .feature-icon {
-    width: 48px; height: 48px;
-    background: var(--cyan-dim);
-    border: 1px solid var(--cyan-border);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    margin-bottom: 20px;
-  }
-
-  .feature-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--white);
-    margin-bottom: 10px;
-  }
-
-  .feature-desc { font-size: 14px; color: var(--gray2); line-height: 1.6; }
-
-  .feature-tag {
-    display: inline-block;
-    margin-top: 16px;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 10px;
-    background: var(--green-dim);
-    color: var(--green);
-    border-radius: 100px;
-    border: 1px solid rgba(0,230,118,0.2);
-  }
-
-  /* TESTIMONIALS */
-  .testimonials-section { padding: 100px 5%; }
-
-  .testimonials-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    margin-top: 60px;
-  }
-
-  .testimonial-card {
-    background: var(--bg3);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: var(--radius);
-    padding: 28px;
-  }
-
-  .testimonial-stars {
-    color: #fbbf24;
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-
-  .testimonial-text {
-    font-size: 15px;
-    color: var(--gray1);
-    line-height: 1.7;
-    font-style: italic;
-    margin-bottom: 20px;
-  }
-
-  .testimonial-author {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .testimonial-avatar {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 15px;
-    flex-shrink: 0;
-  }
-
-  .testimonial-name { font-size: 14px; font-weight: 700; color: var(--white); }
-  .testimonial-role { font-size: 12px; color: var(--gray2); }
-
-  /* PRICING */
-  .pricing-section { padding: 100px 5%; background: var(--bg2); }
-
-  .pricing-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-    max-width: 960px;
-    margin: 64px auto 0;
-  }
-
-  .pricing-card {
-    background: var(--bg);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: var(--radius);
-    padding: 36px;
-    position: relative;
-    transition: transform .2s;
-  }
-
-  .pricing-card:hover { transform: translateY(-4px); }
-
-  .pricing-card.featured {
-    border-color: var(--cyan);
-    background: linear-gradient(160deg, rgba(0,212,255,0.05) 0%, var(--bg) 60%);
-  }
-
-  .pricing-popular {
-    position: absolute;
-    top: -13px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--cyan);
-    color: #000;
-    font-size: 11px;
-    font-weight: 800;
-    padding: 4px 16px;
-    border-radius: 100px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .pricing-plan { font-size: 14px; font-weight: 700; color: var(--gray2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
-
-  .pricing-price {
-    font-size: 48px;
-    font-weight: 800;
-    color: var(--white);
-    letter-spacing: -2px;
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-
-  .pricing-price sup { font-size: 20px; letter-spacing: 0; vertical-align: top; margin-top: 10px; display: inline-block; }
-
-  .pricing-period { font-size: 13px; color: var(--gray2); margin-bottom: 28px; }
-
-  .pricing-divider {
-    border: none;
-    border-top: 1px solid rgba(255,255,255,0.07);
-    margin-bottom: 24px;
-  }
-
-  .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
-
-  .pricing-feature {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 14px;
-    color: var(--gray1);
-  }
-
-  .pricing-check { color: var(--green); flex-shrink: 0; font-size: 16px; }
-  .pricing-x { color: var(--gray3); flex-shrink: 0; font-size: 16px; }
-
-  .btn-plan {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 14px;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: all .2s;
-    text-decoration: none;
-  }
-
-  .btn-plan-outline {
-    background: transparent;
-    color: var(--white);
-    border: 1px solid var(--gray3);
-  }
-
-  .btn-plan-outline:hover { border-color: var(--cyan); color: var(--cyan); }
-
-  .btn-plan-primary {
-    background: var(--cyan);
-    color: #000;
-  }
-
-  .btn-plan-primary:hover { background: #33dcff; }
-
-  /* CTA FINAL */
-  .cta-section {
-    padding: 120px 5%;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .cta-section::before {
-    content: '';
-    position: absolute;
-    bottom: -100px; left: 50%;
-    transform: translateX(-50%);
-    width: 700px; height: 500px;
-    background: radial-gradient(ellipse, rgba(0,230,118,0.06) 0%, transparent 65%);
-    pointer-events: none;
-  }
-
-  .cta-section h2 {
-    font-size: clamp(32px, 4.5vw, 56px);
-    font-weight: 800;
-    color: var(--white);
-    letter-spacing: -1.5px;
-    margin-bottom: 20px;
-  }
-
-  .cta-section h2 span { color: var(--green); }
-
-  .cta-section p {
-    font-size: 18px;
-    color: var(--gray2);
-    margin-bottom: 48px;
-    max-width: 480px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .cta-small {
-    font-size: 13px;
-    color: var(--gray2);
-    margin-top: 16px;
-  }
-
-  /* FOOTER */
-  footer {
-    border-top: 1px solid rgba(255,255,255,0.06);
-    padding: 40px 5%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .footer-logo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--white);
-  }
-
-  .footer-logo-sq {
-    width: 24px; height: 24px;
-    background: var(--cyan);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 800;
-    color: #000;
-  }
-
-  .footer-copy { font-size: 13px; color: var(--gray2); }
-
-  .footer-links {
-    display: flex;
-    gap: 24px;
-  }
-
-  .footer-links a {
-    font-size: 13px;
-    color: var(--gray2);
-    transition: color .2s;
-  }
-
-  .footer-links a:hover { color: var(--white); }
-
-  /* RESPONSIVE */
-  @media (max-width: 768px) {
-    nav .nav-links { display: none; }
-    .mockup-content { grid-template-columns: 1fr; }
-    .mock-sidebar { display: none; }
-    .mock-cards { grid-template-columns: repeat(2, 1fr); }
-    footer { flex-direction: column; text-align: center; }
-  }
-
-  @media (max-width: 480px) {
-    .hero-actions { flex-direction: column; align-items: stretch; }
-    .hero-stats { gap: 28px; }
-  }
-
-  /* SCROLL REVEAL */
-  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s, transform .6s; }
-  .revealed { opacity: 1; transform: none; }
+/* ===== CRITICAL CSS ===== */
+:root {
+  --bg: #08090f;
+  --bg2: #0e0f1a;
+  --bg3: #13141f;
+  --cyan: #00d4ff;
+  --green: #00e676;
+  --yellow: #ffd600;
+  --cyan-dim: rgba(0,212,255,0.10);
+  --cyan-glow: rgba(0,212,255,0.18);
+  --cyan-border: rgba(0,212,255,0.25);
+  --green-dim: rgba(0,230,118,0.10);
+  --white: #ffffff;
+  --gray1: #e2e4ee;
+  --gray2: #8b8fa8;
+  --gray3: #3a3d52;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--gray1);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; }
+
+/* ===== ANIMATED MESH BACKGROUND ===== */
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.06;
+  animation: meshFloat 20s ease-in-out infinite;
+}
+.mesh-blob:nth-child(1) {
+  width: 700px; height: 700px;
+  background: var(--cyan);
+  top: -200px; left: -150px;
+  animation-delay: 0s;
+}
+.mesh-blob:nth-child(2) {
+  width: 500px; height: 500px;
+  background: var(--green);
+  bottom: 10%; right: -100px;
+  animation-delay: -7s;
+}
+.mesh-blob:nth-child(3) {
+  width: 400px; height: 400px;
+  background: var(--cyan);
+  top: 50%; left: 40%;
+  animation-delay: -14s;
+  opacity: 0.04;
+}
+@keyframes meshFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(0.95); }
+}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  height: 64px;
+  background: rgba(8,9,15,0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--white);
+}
+.nav-logo-icon {
+  width: 32px; height: 32px;
+  background: var(--cyan);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  list-style: none;
+}
+.nav-links a { font-size: 14px; color: var(--gray2); transition: color .2s; }
+.nav-links a:hover { color: var(--white); }
+.nav-cta { display: flex; gap: 12px; align-items: center; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all .2s;
+}
+.btn-ghost { background: transparent; color: var(--gray2); border: 1px solid var(--gray3); }
+.btn-ghost:hover { color: var(--white); border-color: var(--gray2); }
+.btn-primary { background: var(--cyan); color: #000; font-weight: 700; }
+.btn-primary:hover { background: #33dcff; transform: translateY(-1px); }
+
+/* ===== HERO ===== */
+.hero {
+  position: relative;
+  padding: 140px 5% 100px;
+  text-align: center;
+  z-index: 1;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 18px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan-border);
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cyan);
+  margin-bottom: 32px;
+  letter-spacing: 0.3px;
+}
+.hero-badge-dot {
+  width: 6px; height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+.hero h1 {
+  font-size: clamp(36px, 6vw, 68px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -2px;
+  color: var(--white);
+  margin-bottom: 24px;
+}
+.hero h1 .cyan { color: var(--cyan); }
+.hero-sub {
+  font-size: clamp(16px, 2.2vw, 20px);
+  color: var(--gray2);
+  max-width: 560px;
+  margin: 0 auto 40px;
+  line-height: 1.55;
+}
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+.btn-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 34px;
+  font-size: 16px;
+  border-radius: 12px;
+  background: var(--cyan);
+  color: #000;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: all .25s;
+  box-shadow: 0 0 0 0 rgba(0,212,255,0.4);
+}
+.btn-hero-primary:hover {
+  background: #33dcff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(0,212,255,0.35);
+}
+.btn-hero-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  font-size: 16px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--white);
+  font-weight: 600;
+  border: 1px solid var(--gray3);
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-hero-outline:hover { border-color: var(--cyan); color: var(--cyan); }
+
+/* Trust Badges */
+.trust-badges {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 60px;
+}
+.trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--gray2);
+}
+.trust-badge span { font-size: 16px; }
+
+/* Animated Counter */
+.hero-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  font-size: 14px;
+  color: var(--gray1);
+  margin-bottom: 64px;
+}
+.hero-counter strong { color: var(--green); font-size: 16px; }
+
+/* Hero Stats */
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  padding-top: 48px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+.hero-stat-item { text-align: center; }
+.hero-stat-num {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -1px;
+}
+.hero-stat-num .accent { color: var(--cyan); }
+.hero-stat-label { font-size: 13px; color: var(--gray2); margin-top: 4px; }
+
+/* ===== MOCKUP ===== */
+.mockup-section { padding: 0 5% 100px; text-align: center; position: relative; z-index: 1; }
+.mockup-wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,255,0.05);
+}
+.mockup-bar {
+  background: var(--bg2);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mockup-dots { display: flex; gap: 6px; }
+.mockup-dot { width: 12px; height: 12px; border-radius: 50%; }
+.mockup-dot:nth-child(1) { background: #ff5f57; }
+.mockup-dot:nth-child(2) { background: #febc2e; }
+.mockup-dot:nth-child(3) { background: #28c840; }
+.mockup-url {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--gray2);
+  text-align: center;
+}
+.mockup-content {
+  padding: 0;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 460px;
+  text-align: left;
+}
+.mock-sidebar {
+  background: var(--bg2);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mock-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 16px;
+}
+.mock-logo-sq {
+  width: 26px; height: 26px;
+  background: var(--cyan);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #000;
+}
+.mock-logo-text { font-size: 15px; font-weight: 700; color: var(--white); }
+.mock-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--gray2);
+  cursor: pointer;
+}
+.mock-nav-item.active { background: var(--cyan-dim); color: var(--cyan); }
+.mock-nav-icon { width: 18px; height: 18px; opacity: 0.7; }
+.mock-main { padding: 20px; overflow: hidden; }
+.mock-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.mock-title { font-size: 18px; font-weight: 700; color: var(--white); }
+.mock-badge {
+  background: var(--green-dim);
+  border: 1px solid rgba(0,230,118,0.3);
+  color: var(--green);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+.mock-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.mock-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 14px;
+}
+.mock-card-label { font-size: 10px; color: var(--gray2); margin-bottom: 8px; }
+.mock-card-value { font-size: 20px; font-weight: 800; color: var(--white); }
+.mock-card-delta { font-size: 10px; color: var(--green); margin-top: 4px; }
+.mock-queue {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.mock-queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  color: var(--gray2);
+  font-weight: 600;
+}
+.mock-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 12px;
+}
+.mock-queue-row:last-child { border-bottom: none; }
+.mock-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.mock-queue-info { flex: 1; }
+.mock-queue-name { color: var(--white); font-weight: 600; }
+.mock-queue-plate { color: var(--gray2); font-size: 11px; }
+.mock-status { font-size: 10px; padding: 3px 8px; border-radius: 100px; font-weight: 600; }
+.status-waiting { background: rgba(255,165,0,0.12); color: #ffa500; border: 1px solid rgba(255,165,0,0.25); }
+.status-progress { background: var(--cyan-dim); color: var(--cyan); border: 1px solid var(--cyan-border); }
+.status-done { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,230,118,0.25); }
+
+/* ===== SOCIAL PROOF BAR ===== */
+.social-bar {
+  background: var(--bg2);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 20px 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+.social-bar-label {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gray2);
+  margin-bottom: 16px;
+}
+.marquee-track {
+  display: flex;
+  gap: 0;
+  animation: marquee 30s linear infinite;
+  width: max-content;
+}
+.marquee-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 36px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray2);
+  white-space: nowrap;
+}
+.marquee-dot { color: var(--cyan); font-size: 8px; }
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ===== SECTION BASE ===== */
+.section { padding: 100px 5%; position: relative; z-index: 1; }
+.section-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -1.5px;
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+.section-sub { font-size: 17px; color: var(--gray2); max-width: 520px; line-height: 1.55; }
+.section-center { text-align: center; max-width: 640px; margin: 0 auto; }
+
+/* ===== PROBLEM SECTION ===== */
+.problems-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  margin-top: 60px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.problems-side {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.problems-side-header {
+  padding: 24px 32px 20px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.problem-side-pain .problems-side-header { background: var(--bg3); color: var(--gray2); }
+.problem-side-solution .problems-side-header { background: rgba(0,212,255,0.05); color: var(--cyan); }
+
+.problem-item {
+  padding: 20px 32px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.problem-side-pain .problem-item { background: var(--bg3); }
+.problem-side-solution .problem-item { background: rgba(0,212,255,0.03); }
+
+.problem-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.problem-emoji { font-size: 22px; flex-shrink: 0; }
+.problem-title { font-size: 15px; font-weight: 700; color: var(--white); }
+.problem-desc { font-size: 13px; color: var(--gray2); line-height: 1.5; padding-left: 32px; }
+.problem-solution { font-size: 13px; color: var(--cyan); line-height: 1.5; padding-left: 32px; font-weight: 500; }
+
+/* ===== FEATURES ===== */
+.features-section { padding: 80px 5%; background: var(--bg2); position: relative; z-index: 1; }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 22px;
+  margin-top: 60px;
+}
+.feature-card {
+  background: var(--bg);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 32px;
+  transition: border-color .25s, transform .25s, box-shadow .25s;
+  cursor: default;
+}
+.feature-card:hover {
+  border-color: var(--cyan-border);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0,212,255,0.08);
+}
+.feature-icon {
+  font-size: 36px;
+  margin-bottom: 18px;
+  display: block;
+}
+.feature-title { font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 10px; }
+.feature-desc { font-size: 14px; color: var(--gray2); line-height: 1.65; margin-bottom: 16px; }
+.feature-link { font-size: 13px; color: var(--cyan); font-weight: 700; display: inline-flex; align-items: center; gap: 4px; transition: gap .2s; }
+.feature-card:hover .feature-link { gap: 8px; }
+
+/* ===== VIDEO / DEMO ===== */
+.demo-section { padding: 100px 5%; text-align: center; position: relative; z-index: 1; }
+.video-placeholder {
+  max-width: 780px;
+  margin: 48px auto 32px;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  aspect-ratio: 16/9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.video-placeholder:hover { border-color: var(--cyan-border); }
+.video-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0,212,255,0.05) 0%, transparent 70%);
+}
+.play-btn {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #000;
+  position: relative;
+  transition: transform .2s, box-shadow .2s;
+}
+.video-placeholder:hover .play-btn {
+  transform: scale(1.1);
+  box-shadow: 0 0 32px rgba(0,212,255,0.5);
+}
+.video-label { font-size: 15px; color: var(--gray2); position: relative; }
+.demo-sub { font-size: 14px; color: var(--gray2); margin-top: 16px; }
+
+/* ===== TESTIMONIALS ===== */
+.testimonials-section { padding: 100px 5%; position: relative; z-index: 1; }
+.testimonials-scroll {
+  display: flex;
+  gap: 20px;
+  margin-top: 56px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 8px;
+}
+.testimonials-scroll::-webkit-scrollbar { display: none; }
+.testimonial-card {
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--radius);
+  padding: 28px;
+  min-width: 320px;
+  max-width: 360px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  transition: border-color .2s;
+}
+.testimonial-card:hover { border-color: var(--cyan-border); }
+.testimonial-stars { color: #fbbf24; font-size: 14px; margin-bottom: 14px; letter-spacing: 2px; }
+.testimonial-text {
+  font-size: 15px;
+  color: var(--gray1);
+  line-height: 1.7;
+  font-style: italic;
+  margin-bottom: 20px;
+}
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.testimonial-name { font-size: 14px; font-weight: 700; color: var(--white); }
+.testimonial-role { font-size: 12px; color: var(--gray2); }
+.testimonial-metric {
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* ===== ROI CALCULATOR ===== */
+.calc-section {
+  padding: 100px 5%;
+  background: var(--bg2);
+  position: relative;
+  z-index: 1;
+}
+.calc-box {
+  max-width: 700px;
+  margin: 48px auto 0;
+  background: var(--bg);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 40px;
+}
+.calc-row { margin-bottom: 28px; }
+.calc-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  color: var(--white);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.calc-label span { color: var(--cyan); }
+input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,212,255,0.5);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--cyan);
+  border: none;
+  cursor: pointer;
+}
+.calc-results {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.calc-result {
+  text-align: center;
+  padding: 16px;
+  background: var(--bg3);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.calc-result-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray2); margin-bottom: 8px; }
+.calc-result-value { font-size: 22px; font-weight: 800; color: var(--white); }
+.calc-result-value.green { color: var(--green); }
+.calc-result-value.cyan { color: var(--cyan); }
+.calc-cta { margin-top: 28px; text-align: center; }
+
+/* ===== PRICING ===== */
+.pricing-section { padding: 100px 5%; position: relative; z-index: 1; }
+
+/* Billing Toggle */
+.billing-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 36px 0 0;
+  flex-wrap: wrap;
+}
+.billing-options {
+  display: flex;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 4px;
+}
+.billing-option {
+  position: relative;
+}
+.billing-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+}
+.billing-option label {
+  display: block;
+  padding: 8px 22px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray2);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.billing-option input[type="radio"]:checked + label {
+  background: var(--cyan);
+  color: #000;
+}
+.discount-badge {
+  background: rgba(0,230,118,0.15);
+  border: 1px solid rgba(0,230,118,0.3);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 100px;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 960px;
+  margin: 48px auto 0;
+}
+.pricing-card {
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius);
+  padding: 36px;
+  position: relative;
+  transition: transform .2s;
+}
+.pricing-card:hover { transform: translateY(-4px); }
+.pricing-card.featured {
+  border-color: transparent;
+  background: var(--bg3);
+  box-shadow: 0 0 0 2px var(--cyan);
+  animation: pricingPulse 3s ease-in-out infinite;
+}
+@keyframes pricingPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--cyan), 0 0 20px rgba(0,212,255,0.1); }
+  50% { box-shadow: 0 0 0 2px var(--cyan), 0 0 40px rgba(0,212,255,0.2); }
+}
+.pricing-popular {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cyan);
+  color: #000;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 18px;
+  border-radius: 100px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pricing-plan { font-size: 13px; font-weight: 700; color: var(--gray2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1.5px; }
+.pricing-price {
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.pricing-price sup { font-size: 22px; letter-spacing: 0; vertical-align: top; margin-top: 12px; display: inline-block; font-weight: 600; }
+.pricing-period { font-size: 13px; color: var(--gray2); margin-bottom: 28px; }
+.pricing-save { font-size: 12px; color: var(--green); font-weight: 700; display: none; }
+.pricing-save.visible { display: block; }
+.pricing-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin-bottom: 24px; }
+.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.pricing-feature { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--gray1); }
+.pricing-check { color: var(--green); flex-shrink: 0; font-size: 16px; font-weight: 700; }
+.pricing-x { color: var(--gray3); flex-shrink: 0; font-size: 16px; }
+.btn-plan {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all .2s;
+}
+.btn-plan-outline { background: transparent; color: var(--white); border: 1px solid var(--gray3); }
+.btn-plan-outline:hover { border-color: var(--cyan); color: var(--cyan); }
+.btn-plan-primary { background: var(--cyan); color: #000; }
+.btn-plan-primary:hover { background: #33dcff; }
+
+/* ===== FAQ ===== */
+.faq-section { max-width: 680px; margin: 64px auto 0; }
+.faq-title { font-size: 18px; font-weight: 700; color: var(--white); text-align: center; margin-bottom: 28px; }
+.faq-item {
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.faq-question {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--white);
+  cursor: pointer;
+  text-align: left;
+  gap: 16px;
+  font-family: var(--font);
+}
+.faq-arrow {
+  color: var(--cyan);
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: transform .25s;
+}
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .35s ease, padding .35s ease;
+  font-size: 14px;
+  color: var(--gray2);
+  line-height: 1.7;
+}
+.faq-item.open .faq-arrow { transform: rotate(45deg); }
+.faq-item.open .faq-answer { max-height: 200px; padding-bottom: 20px; }
+
+/* ===== CTA FINAL ===== */
+.cta-section {
+  padding: 120px 5%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.cta-section::before {
+  content: '';
+  position: absolute;
+  bottom: -100px; left: 50%;
+  transform: translateX(-50%);
+  width: 700px; height: 500px;
+  background: radial-gradient(ellipse, rgba(0,230,118,0.06) 0%, transparent 65%);
+  pointer-events: none;
+}
+.cta-section h2 {
+  font-size: clamp(30px, 4.5vw, 56px);
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -1.5px;
+  margin-bottom: 20px;
+}
+.cta-section h2 span { color: var(--green); }
+.cta-section p { font-size: 18px; color: var(--gray2); margin-bottom: 48px; max-width: 480px; margin-left: auto; margin-right: auto; }
+.cta-small { font-size: 13px; color: var(--gray2); margin-top: 20px; }
+
+/* ===== FOOTER ===== */
+footer {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 60px 5% 40px;
+  position: relative;
+  z-index: 1;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 48px;
+  max-width: 1100px;
+  margin: 0 auto 48px;
+}
+.footer-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+.footer-logo-sq {
+  width: 28px; height: 28px;
+  background: var(--cyan);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #000;
+}
+.footer-tagline { font-size: 13px; color: var(--gray2); line-height: 1.6; max-width: 220px; }
+.footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray2); margin-bottom: 16px; }
+.footer-links-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer-links-list a { font-size: 14px; color: var(--gray2); transition: color .2s; }
+.footer-links-list a:hover { color: var(--white); }
+.footer-contact-item { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gray2); margin-bottom: 10px; transition: color .2s; }
+.footer-contact-item:hover { color: var(--white); }
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.footer-copy { font-size: 13px; color: var(--gray2); }
+.footer-legal { display: flex; gap: 20px; }
+.footer-legal a { font-size: 13px; color: var(--gray2); transition: color .2s; }
+.footer-legal a:hover { color: var(--white); }
+
+/* ===== SCROLL REVEAL ===== */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s, transform .6s; }
+.revealed { opacity: 1; transform: none; }
+
+/* ===== ACCESSIBILITY: REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+  .marquee-track { animation: none; }
+  .mesh-blob { animation: none; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .problems-split { grid-template-columns: 1fr; }
+  .problem-side-solution .problems-side-header { display: none; }
+  .problem-side-solution .problem-item { display: none; }
+  .problems-split { display: block; }
+  .problems-side { display: block; }
+}
+@media (max-width: 768px) {
+  nav .nav-links { display: none; }
+  .mockup-content { grid-template-columns: 1fr; }
+  .mock-sidebar { display: none; }
+  .mock-cards { grid-template-columns: repeat(2, 1fr); }
+  .calc-results { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+}
+@media (max-width: 480px) {
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-stats { gap: 28px; }
+  .trust-badges { gap: 14px; justify-content: center; }
+}
 </style>
 </head>
 <body>
+
+<!-- Animated mesh background -->
+<div class="mesh-bg" aria-hidden="true">
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -840,9 +1111,10 @@
     <li><a href="#features">Funcionalidades</a></li>
     <li><a href="#pricing">Preços</a></li>
     <li><a href="#testimonials">Clientes</a></li>
+    <li><a href="#demo">Demo</a></li>
   </ul>
   <div class="nav-cta">
-    <a href="#pricing" class="btn btn-ghost">Entrar</a>
+    <a href="lavai-onboarding.html" class="btn btn-ghost">Entrar</a>
     <a href="#cta" class="btn btn-primary">Teste grátis →</a>
   </div>
 </nav>
@@ -851,39 +1123,51 @@
 <section class="hero">
   <div class="hero-badge">
     <span class="hero-badge-dot"></span>
-    Agora em beta — vagas limitadas
+    Mais de 400 lava-jatos ativos no Brasil
   </div>
 
-  <h1>O sistema operacional do<br><span>lava-jato moderno</span></h1>
+  <h1>Seu lava-jato no automático —<br>do <span class="cyan">agendamento</span> ao pagamento</h1>
 
-  <p class="hero-sub">Gerencie fila, financeiro e equipe em um só lugar. IA que trabalha por você enquanto você foca nos carros.</p>
+  <p class="hero-sub">Mais de 400 lava-jatos já usam o LAVAI para faturar mais e trabalhar menos. Gerencie fila, financeiro e equipe em um só lugar.</p>
 
   <div class="hero-actions">
-    <a href="#cta" class="btn btn-primary-lg">Começar grátis por 14 dias →</a>
-    <a href="#features" class="btn btn-outline-lg">Ver como funciona</a>
+    <a href="#cta" class="btn-hero-primary">Começar grátis por 14 dias →</a>
+    <a href="#demo" class="btn-hero-outline">▶ Ver demonstração</a>
+  </div>
+
+  <div class="trust-badges">
+    <div class="trust-badge"><span>⭐</span> 4.9/5 avaliação</div>
+    <div class="trust-badge"><span>🔒</span> Dados seguros</div>
+    <div class="trust-badge"><span>📱</span> Funciona no celular</div>
+    <div class="trust-badge"><span>🇧🇷</span> Feito para o Brasil</div>
+  </div>
+
+  <div class="hero-counter">
+    <span>📋</span>
+    <strong id="osCounter">0</strong> OS registradas hoje
   </div>
 
   <div class="hero-stats">
     <div class="hero-stat-item">
-      <div class="hero-stat-num">400<span>mil</span></div>
+      <div class="hero-stat-num">400<span class="accent">mil</span></div>
       <div class="hero-stat-label">Lava-jatos no Brasil</div>
     </div>
     <div class="hero-stat-item">
-      <div class="hero-stat-num"><span>+</span>32%</div>
+      <div class="hero-stat-num"><span class="accent">+</span>32%</div>
       <div class="hero-stat-label">Aumento de receita médio</div>
     </div>
     <div class="hero-stat-item">
-      <div class="hero-stat-num">2<span>min</span></div>
+      <div class="hero-stat-num">2<span class="accent">min</span></div>
       <div class="hero-stat-label">Para começar a usar</div>
     </div>
     <div class="hero-stat-item">
-      <div class="hero-stat-num"><span>R$</span>0</div>
+      <div class="hero-stat-num"><span class="accent">R$</span>0</div>
       <div class="hero-stat-label">Custo nos primeiros 14 dias</div>
     </div>
   </div>
 </section>
 
-<!-- MOCKUP -->
+<!-- MOCKUP / DASHBOARD -->
 <section class="mockup-section">
   <div class="mockup-wrap reveal">
     <div class="mockup-bar">
@@ -913,35 +1197,39 @@
           Financeiro
         </div>
         <div class="mock-nav-item">
-          <svg class="mock-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M4.34 19.07l1.41-1.41"/><path d="M5.75 5.75 4.34 4.34"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+          <svg class="mock-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Relatórios
+        </div>
+        <div class="mock-nav-item">
+          <svg class="mock-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           IA Insights
         </div>
       </div>
       <div class="mock-main">
         <div class="mock-header-row">
-          <div class="mock-title">Segunda-feira, 16 mai</div>
+          <div class="mock-title">Sexta-feira, 17 mai</div>
           <div class="mock-badge">● Caixa aberto</div>
         </div>
         <div class="mock-cards">
           <div class="mock-card">
             <div class="mock-card-label">RECEITA HOJE</div>
-            <div class="mock-card-value">R$847</div>
-            <div class="mock-card-delta">↑ +18% vs ontem</div>
+            <div class="mock-card-value">R$1.247</div>
+            <div class="mock-card-delta">↑ +23% vs ontem</div>
           </div>
           <div class="mock-card">
             <div class="mock-card-label">CARROS</div>
-            <div class="mock-card-value">23</div>
-            <div class="mock-card-delta">↑ +4 vs ontem</div>
+            <div class="mock-card-value">34</div>
+            <div class="mock-card-delta">↑ +7 vs ontem</div>
           </div>
           <div class="mock-card">
             <div class="mock-card-label">NA FILA</div>
-            <div class="mock-card-value" style="color:var(--cyan)">7</div>
+            <div class="mock-card-value" style="color:var(--cyan)">9</div>
             <div class="mock-card-delta" style="color:var(--gray2)">Aguardando</div>
           </div>
           <div class="mock-card">
             <div class="mock-card-label">TICKET MÉDIO</div>
-            <div class="mock-card-value">R$36</div>
-            <div class="mock-card-delta">↑ +R$3 vs mês</div>
+            <div class="mock-card-value">R$43</div>
+            <div class="mock-card-delta">↑ +R$5 vs mês</div>
           </div>
         </div>
         <div class="mock-queue">
@@ -979,148 +1267,337 @@
   </div>
 </section>
 
-<!-- PROBLEM -->
+<!-- SOCIAL PROOF MARQUEE -->
+<div class="social-bar">
+  <div class="social-bar-label">Confiado por lava-jatos em todo o Brasil</div>
+  <div class="marquee-track">
+    <div class="marquee-item"><span class="marquee-dot">●</span> São Paulo</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Rio de Janeiro</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Curitiba</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Belo Horizonte</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Salvador</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Fortaleza</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Manaus</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Recife</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Porto Alegre</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Goiânia</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Belém</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Florianópolis</div>
+    <!-- Duplicate for seamless loop -->
+    <div class="marquee-item"><span class="marquee-dot">●</span> São Paulo</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Rio de Janeiro</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Curitiba</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Belo Horizonte</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Salvador</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Fortaleza</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Manaus</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Recife</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Porto Alegre</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Goiânia</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Belém</div>
+    <div class="marquee-item"><span class="marquee-dot">●</span> Florianópolis</div>
+  </div>
+</div>
+
+<!-- PROBLEM SECTION -->
 <section class="section">
-  <div style="text-align:center; max-width:640px; margin:0 auto;">
+  <div class="section-center">
     <div class="section-label">O Problema</div>
     <h2 class="section-title">Seu lava-jato merece mais do que caderno e papel</h2>
-    <p class="section-sub">400 mil negócios no Brasil ainda operam no caos — fila na cabeça, caixa no caderno, equipe no grito.</p>
+    <p class="section-sub">400 mil negócios no Brasil ainda operam no caos. Veja como o LAVAI resolve cada ponto de dor.</p>
   </div>
-  <div class="problems-grid">
-    <div class="problem-card reveal">
-      <div class="problem-emoji">😤</div>
-      <div class="problem-title">Fila desorganizada</div>
-      <div class="problem-desc">Clientes esperam sem saber sua posição. Você perde tempo respondendo "quanto falta?" no zap.</div>
+
+  <div class="problems-split reveal">
+    <!-- Pain side -->
+    <div class="problems-side problem-side-pain">
+      <div class="problems-side-header">Sem o LAVAI</div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">💸</span>
+          <div class="problem-title">Perde dinheiro com fiados</div>
+        </div>
+        <div class="problem-desc">Clientes saem sem pagar e você anota no papel. No fim do mês, esqueceu metade.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">📝</span>
+          <div class="problem-title">Controle no papel ou no WhatsApp</div>
+        </div>
+        <div class="problem-desc">Lista de fila no zap, caixa no caderno, equipe no grito. Caos garantido.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">📊</span>
+          <div class="problem-title">Não sabe quanto lucra por mês</div>
+        </div>
+        <div class="problem-desc">Fechamento do mês é chute. Você trabalha duro mas não sabe se cresceu.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">👥</span>
+          <div class="problem-title">Equipe desorganizada</div>
+        </div>
+        <div class="problem-desc">Não sabe quem lavou mais, quem chegou atrasado, nem quem traz mais resultado.</div>
+      </div>
     </div>
-    <div class="problem-card reveal">
-      <div class="problem-emoji">📒</div>
-      <div class="problem-title">Financeiro no caderno</div>
-      <div class="problem-desc">No fim do dia você não sabe quanto recebeu, quanto gastou, nem se teve lucro de verdade.</div>
-    </div>
-    <div class="problem-card reveal">
-      <div class="problem-emoji">👥</div>
-      <div class="problem-title">Equipe sem controle</div>
-      <div class="problem-desc">Não sabe quem lavou mais, quem chegou atrasado ou qual funcionário traz mais resultado.</div>
-    </div>
-    <div class="problem-card reveal">
-      <div class="problem-emoji">📱</div>
-      <div class="problem-title">Zero automação</div>
-      <div class="problem-desc">Confirmação de agendamento manual, lembretes no pulso, cobranças que você esquece de fazer.</div>
+
+    <!-- Solution side -->
+    <div class="problems-side problem-side-solution">
+      <div class="problems-side-header">Com o LAVAI</div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">✅</span>
+          <div class="problem-title">Cobranças automáticas por WhatsApp</div>
+        </div>
+        <div class="problem-solution">Bot envia lembrete automático para clientes com pagamento pendente. Zero esquecimento.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">📲</span>
+          <div class="problem-title">Tudo no app, em tempo real</div>
+        </div>
+        <div class="problem-solution">Fila digital, caixa automático, equipe organizada. Tudo no celular, a qualquer hora.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">💰</span>
+          <div class="problem-title">Relatório semanal automático</div>
+        </div>
+        <div class="problem-solution">Receba todo dia o resumo do faturamento. Saiba exatamente se seu negócio cresceu.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-item-top">
+          <span class="problem-emoji">🏆</span>
+          <div class="problem-title">Ranking de desempenho da equipe</div>
+        </div>
+        <div class="problem-solution">Veja em tempo real quem está lavando mais e recompense os melhores automaticamente.</div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- FEATURES -->
 <section class="features-section" id="features">
-  <div style="text-align:center; max-width:640px; margin:0 auto;">
+  <div class="section-center">
     <div class="section-label">Funcionalidades</div>
     <h2 class="section-title">Tudo que você precisa, num só lugar</h2>
     <p class="section-sub">Do celular ao computador, do carro que chega ao dinheiro que entra.</p>
   </div>
   <div class="features-grid">
     <div class="feature-card reveal">
-      <div class="feature-icon">🚗</div>
-      <div class="feature-title">Fila em tempo real</div>
-      <div class="feature-desc">Veja todos os carros na fila, acompanhe o status de cada um e avance etapas com um toque. Seu cliente sabe exatamente onde está.</div>
-      <span class="feature-tag">✓ Disponível no mobile</span>
+      <span class="feature-icon">🚗</span>
+      <div class="feature-title">Fila Digital</div>
+      <div class="feature-desc">Veja todos os carros, avance etapas com um toque. Seu cliente recebe update pelo WhatsApp automaticamente.</div>
+      <div class="feature-link">Saiba mais →</div>
     </div>
     <div class="feature-card reveal">
-      <div class="feature-icon">💰</div>
-      <div class="feature-title">Caixa inteligente</div>
-      <div class="feature-desc">Receitas, despesas e lucro líquido calculados automaticamente. Feche o caixa em segundos e veja o histórico de qualquer dia.</div>
-      <span class="feature-tag">✓ PIX, cartão e dinheiro</span>
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">Bot WhatsApp</div>
+      <div class="feature-desc">Agendamentos, confirmações e cobranças 100% automáticos. O bot trabalha mesmo quando você dorme.</div>
+      <div class="feature-link">Saiba mais →</div>
     </div>
     <div class="feature-card reveal">
-      <div class="feature-icon">🤖</div>
-      <div class="feature-title">IA que analisa seu negócio</div>
-      <div class="feature-desc">Insights automáticos sobre seu pico de movimento, serviços mais lucrativos e sugestões de quando contratar mais funcionários.</div>
-      <span class="feature-tag">✓ Incluso no Pro</span>
+      <span class="feature-icon">📊</span>
+      <div class="feature-title">Relatórios em Tempo Real</div>
+      <div class="feature-desc">Faturamento, ticket médio, serviços mais lucrativos e tendências. Dashboards prontos, sem configuração.</div>
+      <div class="feature-link">Saiba mais →</div>
     </div>
     <div class="feature-card reveal">
-      <div class="feature-icon">📲</div>
-      <div class="feature-title">App mobile para donos</div>
-      <div class="feature-desc">Gerencie seu lava-jato pelo celular, em qualquer lugar. Dashboard completo no seu bolso, com notificações em tempo real.</div>
-      <span class="feature-tag">✓ iOS e Android</span>
+      <span class="feature-icon">⭐</span>
+      <div class="feature-title">Programa de Fidelidade</div>
+      <div class="feature-desc">Pontos por lavagem, níveis Bronze ao Diamante, recompensas automáticas. Cliente volta e traz amigos.</div>
+      <div class="feature-link">Saiba mais →</div>
     </div>
     <div class="feature-card reveal">
-      <div class="feature-icon">👨‍👩‍👧</div>
-      <div class="feature-title">Gestão de equipe</div>
-      <div class="feature-desc">Acompanhe o desempenho de cada funcionário, carros lavados, receita gerada e presença — tudo automático.</div>
-      <span class="feature-tag">✓ Multi-usuário</span>
+      <span class="feature-icon">📱</span>
+      <div class="feature-title">App Mobile Completo</div>
+      <div class="feature-desc">Gerencie tudo pelo celular. Notificações em tempo real, dashboard completo no bolso. iOS e Android.</div>
+      <div class="feature-link">Saiba mais →</div>
     </div>
     <div class="feature-card reveal">
-      <div class="feature-icon">📊</div>
-      <div class="feature-title">Relatórios automáticos</div>
-      <div class="feature-desc">Relatório semanal no seu WhatsApp toda segunda. Saiba se seu negócio cresceu antes de chegar no trabalho.</div>
-      <span class="feature-tag">✓ Em breve</span>
+      <span class="feature-icon">💰</span>
+      <div class="feature-title">Financeiro Automatizado</div>
+      <div class="feature-desc">Receitas, despesas e lucro calculados automaticamente. Feche o caixa em segundos. PIX, cartão e dinheiro.</div>
+      <div class="feature-link">Saiba mais →</div>
     </div>
   </div>
 </section>
 
+<!-- VIDEO / DEMO -->
+<section class="demo-section" id="demo">
+  <div class="section-label" style="text-align:center">Demo</div>
+  <h2 class="section-title" style="text-align:center">Veja o LAVAI em 60 segundos</h2>
+  <p style="text-align:center;color:var(--gray2);font-size:17px;max-width:480px;margin:0 auto;">Do cadastro ao primeiro carro na fila. Simples assim.</p>
+
+  <div class="video-placeholder reveal" role="button" tabindex="0" aria-label="Assistir demonstração do LAVAI">
+    <div class="play-btn">▶</div>
+    <div class="video-label">Clique para assistir a demonstração</div>
+  </div>
+
+  <a href="#cta" class="btn-hero-primary" style="display:inline-flex;margin:0 auto;">Agendar uma demo grátis →</a>
+  <div class="demo-sub">Sem cartão de crédito. Cancelamento a qualquer momento.</div>
+</section>
+
 <!-- TESTIMONIALS -->
 <section class="testimonials-section" id="testimonials">
-  <div style="text-align:center; max-width:640px; margin:0 auto;">
+  <div class="section-center">
     <div class="section-label">Clientes</div>
     <h2 class="section-title">Donos de lava-jato que mudaram o jogo</h2>
     <p class="section-sub">Resultados reais de quem trocou o caderno pelo LAVAI.</p>
   </div>
-  <div class="testimonials-grid">
-    <div class="testimonial-card reveal">
+
+  <div class="testimonials-scroll">
+
+    <div class="testimonial-card">
       <div class="testimonial-stars">★★★★★</div>
-      <div class="testimonial-text">"No primeiro mês de uso percebi que eu estava perdendo R$800 em descontos que nem sabia que dava. O LAVAI me mostrou isso em 5 minutos."</div>
+      <div class="testimonial-text">"Aumentei 40% o faturamento no terceiro mês. O LAVAI me mostrou que eu estava perdendo R$800 por mês em descontos que nem sabia que dava."</div>
       <div class="testimonial-author">
-        <div class="testimonial-avatar" style="background:#1a3a4a;color:var(--cyan)">CR</div>
+        <div class="testimonial-avatar" style="background:#1a3a4a;color:var(--cyan)">MA</div>
         <div>
-          <div class="testimonial-name">Carlos Ramos</div>
-          <div class="testimonial-role">Lava Jato do Carlos — São Paulo, SP</div>
+          <div class="testimonial-name">Marcos Andrade</div>
+          <div class="testimonial-role">Lava Jato Andrade — São Paulo, SP</div>
+          <div class="testimonial-metric">+40% faturamento em 90 dias</div>
         </div>
       </div>
     </div>
-    <div class="testimonial-card reveal">
+
+    <div class="testimonial-card">
       <div class="testimonial-stars">★★★★★</div>
-      <div class="testimonial-text">"Minha fila virou um caos nas sextas. Com o LAVAI coloco todo mundo na lista e a equipe sabe exatamente o que fazer. Não perco mais cliente por espera."</div>
+      <div class="testimonial-text">"Economizo 3 horas por dia que eu gastava organizando a fila e respondendo WhatsApp. Agora o bot faz tudo e eu foco em atender melhor."</div>
       <div class="testimonial-author">
-        <div class="testimonial-avatar" style="background:#1a2a1a;color:var(--green)">FM</div>
+        <div class="testimonial-avatar" style="background:#2a1a2a;color:#c084fc">AS</div>
         <div>
-          <div class="testimonial-name">Fernanda Moraes</div>
-          <div class="testimonial-role">Auto Spa FMA — Campinas, SP</div>
+          <div class="testimonial-name">Ana Souza</div>
+          <div class="testimonial-role">Auto Spa da Ana — Rio de Janeiro, RJ</div>
+          <div class="testimonial-metric">3h economizadas por dia</div>
         </div>
       </div>
     </div>
-    <div class="testimonial-card reveal">
+
+    <div class="testimonial-card">
       <div class="testimonial-stars">★★★★★</div>
-      <div class="testimonial-text">"Minha esposa não acreditava que eu fechava o mês com lucro. Aí mostrei o relatório do LAVAI e ela ficou sem palavras. R$12 mil de lucro líquido em março."</div>
+      <div class="testimonial-text">"Minha esposa não acreditava que eu fechava o mês com lucro. Mostrei o relatório do LAVAI: R$12 mil de lucro líquido em março. Ficou sem palavras."</div>
       <div class="testimonial-author">
-        <div class="testimonial-avatar" style="background:#2a1a3a;color:#a78bfa">RS</div>
+        <div class="testimonial-avatar" style="background:#1a2a1a;color:var(--green)">CO</div>
         <div>
-          <div class="testimonial-name">Roberto Santos</div>
+          <div class="testimonial-name">Carlos Oliveira</div>
           <div class="testimonial-role">Brilho Total — Belo Horizonte, MG</div>
+          <div class="testimonial-metric">R$12k lucro líquido no mês</div>
         </div>
       </div>
+    </div>
+
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"Tinha medo de sistema complicado. Configurei tudo em 8 minutos e já estava com o primeiro carro na fila. Minha equipe aprendeu em meia hora."</div>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar" style="background:#1a1a3a;color:#60a5fa)">FL</div>
+        <div>
+          <div class="testimonial-name">Fernanda Lima</div>
+          <div class="testimonial-role">Clean Express — Porto Alegre, RS</div>
+          <div class="testimonial-metric">Setup completo em 8 minutos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"O programa de fidelidade dobrou minha frequência de clientes. Pessoal volta toda semana pra acumular ponto. Ticket médio subiu R$18 reais."</div>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar" style="background:#2a1a1a;color:#fb923c">RN</div>
+        <div>
+          <div class="testimonial-name">Roberto Nunes</div>
+          <div class="testimonial-role">Lava Premium — Salvador, BA</div>
+          <div class="testimonial-metric">Ticket médio +R$18 por carro</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ROI CALCULATOR -->
+<section class="calc-section">
+  <div class="section-center">
+    <div class="section-label">Calculadora de ROI</div>
+    <h2 class="section-title">Quanto você pode ganhar com o LAVAI?</h2>
+    <p class="section-sub">Arraste os sliders e veja o impacto no seu faturamento.</p>
+  </div>
+
+  <div class="calc-box reveal">
+    <div class="calc-row">
+      <div class="calc-label">
+        Quantas OS você faz por dia?
+        <span id="osLabel">20</span>
+      </div>
+      <input type="range" id="osSlider" min="5" max="100" value="20" oninput="calcROI()">
+    </div>
+
+    <div class="calc-row">
+      <div class="calc-label">
+        Qual o ticket médio?
+        <span id="ticketLabel">R$ 45</span>
+      </div>
+      <input type="range" id="ticketSlider" min="20" max="200" value="45" oninput="calcROI()">
+    </div>
+
+    <div class="calc-results">
+      <div class="calc-result">
+        <div class="calc-result-label">Faturamento Atual</div>
+        <div class="calc-result-value" id="calcRevenue">R$ 27.000</div>
+      </div>
+      <div class="calc-result">
+        <div class="calc-result-label">Com LAVAI (+28%)</div>
+        <div class="calc-result-value green" id="calcWithLavai">R$ 34.560</div>
+      </div>
+      <div class="calc-result">
+        <div class="calc-result-label">Ganho Mensal</div>
+        <div class="calc-result-value cyan" id="calcGain">+R$ 7.560</div>
+      </div>
+    </div>
+
+    <div class="calc-cta">
+      <a href="#cta" class="btn-hero-primary">Comece a lucrar mais com LAVAI →</a>
     </div>
   </div>
 </section>
 
 <!-- PRICING -->
 <section class="pricing-section" id="pricing">
-  <div style="text-align:center; max-width:640px; margin:0 auto;">
+  <div class="section-center">
     <div class="section-label">Preços</div>
     <h2 class="section-title">Sem pegadinha, sem contrato</h2>
     <p class="section-sub">14 dias grátis em qualquer plano. Cancele quando quiser.</p>
   </div>
+
+  <div class="billing-toggle">
+    <div class="billing-options">
+      <div class="billing-option">
+        <input type="radio" name="billing" id="monthly" value="monthly" checked>
+        <label for="monthly">Mensal</label>
+      </div>
+      <div class="billing-option">
+        <input type="radio" name="billing" id="annual" value="annual">
+        <label for="annual">Anual</label>
+      </div>
+    </div>
+    <span class="discount-badge">20% de desconto no anual</span>
+  </div>
+
   <div class="pricing-grid">
 
     <div class="pricing-card reveal">
       <div class="pricing-plan">Starter</div>
-      <div class="pricing-price"><sup>R$</sup>97</div>
-      <div class="pricing-period">por mês · cobrança mensal</div>
+      <div class="pricing-price" id="price-starter"><sup>R$</sup>97</div>
+      <div class="pricing-period" id="period-starter">por mês · cobrança mensal</div>
+      <div class="pricing-save" id="save-starter">Economize R$233/ano</div>
       <hr class="pricing-divider">
       <ul class="pricing-features">
         <li class="pricing-feature"><span class="pricing-check">✓</span> Fila em tempo real</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> Caixa diário</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> Até 2 funcionários</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> App mobile</li>
-        <li class="pricing-feature"><span class="pricing-x">✗</span> <span style="color:var(--gray2)">IA Insights</span></li>
+        <li class="pricing-feature"><span class="pricing-x">✗</span> <span style="color:var(--gray2)">Bot WhatsApp</span></li>
         <li class="pricing-feature"><span class="pricing-x">✗</span> <span style="color:var(--gray2)">Relatórios automáticos</span></li>
       </ul>
       <a href="#cta" class="btn-plan btn-plan-outline">Começar grátis</a>
@@ -1128,16 +1605,17 @@
 
     <div class="pricing-card featured reveal">
       <div class="pricing-popular">MAIS POPULAR</div>
-      <div class="pricing-plan" style="color:var(--cyan)">Pro</div>
-      <div class="pricing-price"><sup>R$</sup>197</div>
-      <div class="pricing-period">por mês · cobrança mensal</div>
+      <div class="pricing-plan" style="color:var(--cyan)">Profissional</div>
+      <div class="pricing-price" id="price-pro"><sup>R$</sup>197</div>
+      <div class="pricing-period" id="period-pro">por mês · cobrança mensal</div>
+      <div class="pricing-save" id="save-pro">Economize R$480/ano</div>
       <hr class="pricing-divider" style="border-color:rgba(0,212,255,0.2)">
       <ul class="pricing-features">
         <li class="pricing-feature"><span class="pricing-check">✓</span> Tudo do Starter</li>
-        <li class="pricing-feature"><span class="pricing-check">✓</span> IA Insights avançados</li>
+        <li class="pricing-feature"><span class="pricing-check">✓</span> Bot WhatsApp automático</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> Funcionários ilimitados</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> Relatório semanal automático</li>
-        <li class="pricing-feature"><span class="pricing-check">✓</span> Painel de equipe completo</li>
+        <li class="pricing-feature"><span class="pricing-check">✓</span> Programa de fidelidade</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> Suporte prioritário</li>
       </ul>
       <a href="#cta" class="btn-plan btn-plan-primary">Começar grátis →</a>
@@ -1145,11 +1623,12 @@
 
     <div class="pricing-card reveal">
       <div class="pricing-plan">Enterprise</div>
-      <div class="pricing-price"><sup>R$</sup>599</div>
-      <div class="pricing-period">por mês · múltiplas unidades</div>
+      <div class="pricing-price" id="price-ent"><sup>R$</sup>599</div>
+      <div class="pricing-period" id="period-ent">por mês · múltiplas unidades</div>
+      <div class="pricing-save" id="save-ent">Economize R$1.440/ano</div>
       <hr class="pricing-divider">
       <ul class="pricing-features">
-        <li class="pricing-feature"><span class="pricing-check">✓</span> Tudo do Pro</li>
+        <li class="pricing-feature"><span class="pricing-check">✓</span> Tudo do Profissional</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> Múltiplas unidades</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> API e integrações</li>
         <li class="pricing-feature"><span class="pricing-check">✓</span> Dashboard consolidado</li>
@@ -1160,6 +1639,51 @@
     </div>
 
   </div>
+
+  <!-- FAQ -->
+  <div class="faq-section">
+    <div class="faq-title">Perguntas frequentes</div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Preciso de cartão para o trial?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-answer">Não. Os 14 dias de teste são completamente gratuitos, sem precisar cadastrar nenhum cartão de crédito. Você só paga se quiser continuar depois do trial.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Posso cancelar quando quiser?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-answer">Sim, sem burocracia. Você pode cancelar a qualquer momento diretamente pelo painel, sem precisar falar com ninguém. Sem multa, sem carência.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Funciona no celular?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-answer">Sim! O LAVAI funciona em qualquer celular pelo navegador, e também temos o app nativo para iOS e Android. Você gerencia tudo de onde estiver.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Quantos lava-jatos posso cadastrar?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-answer">No plano Starter e Profissional você gerencia 1 unidade. No Enterprise, você pode cadastrar múltiplas unidades com dashboard consolidado para todas elas.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Como funciona o suporte?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-answer">Todos os planos têm suporte via WhatsApp e chat em português. No plano Profissional o suporte é prioritário com resposta em até 2 horas. No Enterprise, você tem gerente de conta dedicado.</div>
+    </div>
+  </div>
 </section>
 
 <!-- CTA FINAL -->
@@ -1167,7 +1691,7 @@
   <div class="section-label" style="text-align:center">Comece agora</div>
   <h2>Seu lava-jato pode faturar<br><span>muito mais</span> este mês</h2>
   <p>14 dias grátis, sem cartão de crédito. Setup em 2 minutos.</p>
-  <a href="#" class="btn btn-primary-lg" style="display:inline-flex">
+  <a href="lavai-onboarding.html" class="btn-hero-primary" style="display:inline-flex;margin:0 auto;">
     Criar conta grátis →
   </a>
   <div class="cta-small">✓ Sem cartão de crédito &nbsp;·&nbsp; ✓ Cancele quando quiser &nbsp;·&nbsp; ✓ Suporte em português</div>
@@ -1175,36 +1699,158 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-logo">
-    <div class="footer-logo-sq">L</div>
-    LAVAI
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo-row">
+        <div class="footer-logo-sq">L</div>
+        LAVAI
+      </div>
+      <p class="footer-tagline">O sistema operacional do lava-jato moderno. Feito com ❤️ no Brasil, para o Brasil.</p>
+    </div>
+
+    <div>
+      <div class="footer-col-title">Produto</div>
+      <ul class="footer-links-list">
+        <li><a href="#features">Funcionalidades</a></li>
+        <li><a href="#pricing">Preços</a></li>
+        <li><a href="#demo">Demonstração</a></li>
+        <li><a href="lavai-onboarding.html">Começar grátis</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-col-title">Empresa</div>
+      <ul class="footer-links-list">
+        <li><a href="#">Sobre nós</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Parceiros</a></li>
+        <li><a href="#">Carreiras</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-col-title">Contato</div>
+      <a href="https://wa.me/5511999999999" class="footer-contact-item">
+        💬 WhatsApp: (11) 99999-9999
+      </a>
+      <a href="mailto:contato@lavai.com.br" class="footer-contact-item">
+        ✉️ contato@lavai.com.br
+      </a>
+      <a href="https://wa.me/5511999999999" class="footer-contact-item" style="color:var(--green);font-weight:600;margin-top:8px;">
+        Suporte em português
+      </a>
+    </div>
   </div>
-  <div class="footer-copy">© 2026 LAVAI. Todos os direitos reservados.</div>
-  <div class="footer-links">
-    <a href="#">Privacidade</a>
-    <a href="#">Termos</a>
-    <a href="#">Contato</a>
+
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 LAVAI. Todos os direitos reservados. Feito com ❤️ no Brasil.</div>
+    <div class="footer-legal">
+      <a href="#">Privacidade</a>
+      <a href="#">Termos de Uso</a>
+      <a href="#">Cookies</a>
+    </div>
   </div>
 </footer>
 
 <script>
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('revealed');
-        observer.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-
-  document.querySelectorAll('.reveal').forEach(el => {
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-      el.classList.add('revealed');
-    } else {
-      observer.observe(el);
+/* ===== SCROLL REVEAL ===== */
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('revealed');
+      revealObserver.unobserve(e.target);
     }
   });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => {
+  const rect = el.getBoundingClientRect();
+  if (rect.top < window.innerHeight && rect.bottom > 0) {
+    el.classList.add('revealed');
+  } else {
+    revealObserver.observe(el);
+  }
+});
+
+/* ===== OS COUNTER ANIMATION ===== */
+function animateCounter(el, target, duration) {
+  const start = performance.now();
+  const update = (now) => {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target).toLocaleString('pt-BR');
+    if (progress < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+const counterEl = document.getElementById('osCounter');
+const counterObserver = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting) {
+    animateCounter(counterEl, 2847, 2000);
+    counterObserver.disconnect();
+  }
+}, { threshold: 0.5 });
+counterObserver.observe(counterEl);
+
+/* ===== BILLING TOGGLE ===== */
+const PRICES = {
+  monthly: { starter: 97, pro: 197, ent: 599 },
+  annual: { starter: 78, pro: 157, ent: 479 }
+};
+
+document.querySelectorAll('input[name="billing"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const mode = radio.value;
+    const prices = PRICES[mode];
+    const isAnnual = mode === 'annual';
+
+    document.getElementById('price-starter').innerHTML = `<sup>R$</sup>${prices.starter}`;
+    document.getElementById('price-pro').innerHTML = `<sup>R$</sup>${prices.pro}`;
+    document.getElementById('price-ent').innerHTML = `<sup>R$</sup>${prices.ent}`;
+
+    const suffix = isAnnual ? 'por mês · cobrança anual' : 'por mês · cobrança mensal';
+    const entSuffix = isAnnual ? 'por mês · anual, múltiplas unidades' : 'por mês · múltiplas unidades';
+    document.getElementById('period-starter').textContent = suffix;
+    document.getElementById('period-pro').textContent = suffix;
+    document.getElementById('period-ent').textContent = entSuffix;
+
+    ['starter', 'pro', 'ent'].forEach(p => {
+      document.getElementById(`save-${p}`).classList.toggle('visible', isAnnual);
+    });
+  });
+});
+
+/* ===== FAQ ACCORDION ===== */
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+/* ===== ROI CALCULATOR ===== */
+function calcROI() {
+  const os = parseInt(document.getElementById('osSlider').value);
+  const ticket = parseInt(document.getElementById('ticketSlider').value);
+
+  document.getElementById('osLabel').textContent = os;
+  document.getElementById('ticketLabel').textContent = `R$ ${ticket}`;
+
+  const workDays = 26;
+  const monthly = os * ticket * workDays;
+  const withLavai = Math.round(monthly * 1.28);
+  const gain = withLavai - monthly;
+
+  const fmt = (n) => 'R$ ' + n.toLocaleString('pt-BR');
+
+  document.getElementById('calcRevenue').textContent = fmt(monthly);
+  document.getElementById('calcWithLavai').textContent = fmt(withLavai);
+  document.getElementById('calcGain').textContent = '+' + fmt(gain);
+}
+
+calcROI();
 </script>
 </body>
 </html>

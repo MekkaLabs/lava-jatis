@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LAVAI — Central de Produtos</title>
+<title>LAVAI v2.0 — Central de Produtos</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#08090f;--bg2:#0e0f1a;--bg3:#13141f;--cyan:#00d4ff;--green:#00e676;--amber:#fbbf24;--purple:#a855f7;--cyan-dim:rgba(0,212,255,0.1);--cyan-border:rgba(0,212,255,0.22);--white:#fff;--gray1:#e2e4ee;--gray2:#8b8fa8;--gray3:#3a3d52}
@@ -13,7 +13,11 @@ a{color:inherit;text-decoration:none}
 nav{display:flex;align-items:center;justify-content:space-between;padding:0 5%;height:60px;border-bottom:1px solid rgba(255,255,255,0.06);position:sticky;top:0;background:rgba(8,9,15,0.9);backdrop-filter:blur(20px);z-index:100}
 .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;color:var(--white)}
 .logo-sq{width:30px;height:30px;background:var(--cyan);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#000;font-weight:900}
+.nav-right{display:flex;align-items:center;gap:12px}
 .nav-badge{font-size:11px;padding:3px 10px;background:var(--cyan-dim);border:1px solid var(--cyan-border);border-radius:100px;color:var(--cyan);font-weight:600}
+.status-indicator{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:600;padding:4px 12px;background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:100px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:statusPulse 2s ease-in-out infinite}
+@keyframes statusPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,118,0.4)}50%{opacity:.8;box-shadow:0 0 0 4px rgba(0,230,118,0)}}
 .hero{text-align:center;padding:80px 5% 60px;position:relative}
 .hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,rgba(0,212,255,0.07) 0%,transparent 65%);pointer-events:none}
 .hero-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:var(--cyan-dim);border:1px solid var(--cyan-border);border-radius:100px;font-size:12px;color:var(--cyan);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:24px}
@@ -22,6 +26,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 5%;h
 .hero h1{font-size:clamp(32px,5vw,60px);font-weight:800;color:var(--white);letter-spacing:-2px;line-height:1.1;margin-bottom:16px}
 .hero h1 span{color:var(--cyan)}
 .hero p{font-size:clamp(15px,2vw,19px);color:var(--gray2);max-width:520px;margin:0 auto}
+.version-tag{display:inline-block;margin-top:16px;font-size:12px;color:var(--gray2);background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:100px;padding:4px 14px}
+.version-tag strong{color:var(--cyan)}
 .section{padding:48px 5%}
 .section-title{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin-bottom:20px}
 .grid{display:grid;gap:16px}
@@ -40,7 +46,19 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 5%;h
 .badge-live{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.25)}
 .badge-pptx{background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.25)}
 .badge-next{background:rgba(168,85,247,0.12);color:var(--purple);border:1px solid rgba(168,85,247,0.25)}
+.badge-new{background:rgba(0,212,255,0.12);color:var(--cyan);border:1px solid rgba(0,212,255,0.25)}
 .card-featured{background:linear-gradient(135deg,rgba(0,212,255,0.07) 0%,var(--bg3) 60%);border-color:var(--cyan-border)}
+
+/* System Status Panel */
+.status-panel{background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:32px}
+.status-panel-left{display:flex;align-items:center;gap:14px}
+.status-light{width:12px;height:12px;border-radius:50%;background:var(--green);flex-shrink:0;animation:statusPulse 2s ease-in-out infinite}
+.status-panel-text h4{font-size:15px;font-weight:700;color:var(--white);margin-bottom:2px}
+.status-panel-text p{font-size:13px;color:var(--gray2)}
+.status-services{display:flex;gap:16px;flex-wrap:wrap}
+.status-service{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray2)}
+.status-service-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
 .deploy-box{background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:32px;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .deploy-left h3{font-size:20px;font-weight:700;color:var(--white);margin-bottom:8px}
 .deploy-left p{font-size:14px;color:var(--gray2);line-height:1.6;max-width:480px}
@@ -60,22 +78,26 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 5%;h
 .stat-label{font-size:12px;color:var(--gray2);margin-top:4px}
 footer{border-top:1px solid rgba(255,255,255,0.06);padding:32px 5%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
 .footer-copy{font-size:13px;color:var(--gray2)}
-@media(max-width:600px){.deploy-box{flex-direction:column}}
+@media(max-width:600px){.deploy-box{flex-direction:column}.status-panel{flex-direction:column;align-items:flex-start}}
 </style>
 </head>
 <body>
 
 <nav>
   <div class="logo"><div class="logo-sq">💧</div>LAVAI</div>
-  <span class="nav-badge">Central de Produtos</span>
+  <div class="nav-right">
+    <div class="status-indicator"><span class="status-dot"></span>Sistemas operacionais</div>
+    <span class="nav-badge">Central de Produtos</span>
+  </div>
 </nav>
 
 <section class="hero">
   <div class="hero-tag"><span class="dot"></span>Sistema completo</div>
   <h1>Bem-vindo ao<br><span>ecossistema LAVAI</span></h1>
   <p>Todos os módulos, ferramentas e apps do seu SaaS para lava-jatos em um só lugar.</p>
+  <div class="version-tag">LAVAI <strong>v2.0</strong> — Build <strong id="buildDate"></strong></div>
   <div class="stat-grid">
-    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Módulos prontos</div></div>
+    <div class="stat"><div class="stat-num">9</div><div class="stat-label">Módulos prontos</div></div>
     <div class="stat"><div class="stat-num"><span>400</span>k</div><div class="stat-label">Mercado alvo</div></div>
     <div class="stat"><div class="stat-num">14</div><div class="stat-label">Dias grátis</div></div>
     <div class="stat"><div class="stat-num"><span>R$</span>97</div><div class="stat-label">Plano de entrada</div></div>
@@ -83,6 +105,24 @@ footer{border-top:1px solid rgba(255,255,255,0.06);padding:32px 5%;display:flex;
 </section>
 
 <section class="section">
+  <!-- System Status -->
+  <div class="status-panel">
+    <div class="status-panel-left">
+      <div class="status-light"></div>
+      <div class="status-panel-text">
+        <h4>Todos os sistemas operacionais</h4>
+        <p>Uptime 99.9% — Nenhum incidente nas últimas 30 dias</p>
+      </div>
+    </div>
+    <div class="status-services">
+      <div class="status-service"><span class="status-service-dot"></span>App Web</div>
+      <div class="status-service"><span class="status-service-dot"></span>API</div>
+      <div class="status-service"><span class="status-service-dot"></span>Bot WhatsApp</div>
+      <div class="status-service"><span class="status-service-dot"></span>Banco de Dados</div>
+      <div class="status-service"><span class="status-service-dot"></span>Pagamentos</div>
+    </div>
+  </div>
+
   <div class="section-title">Páginas Principais</div>
   <div class="grid grid-2">
     <a href="lavai-landing.html" class="card card-featured">
@@ -166,6 +206,14 @@ footer{border-top:1px solid rgba(255,255,255,0.06);padding:32px 5%;display:flex;
       <div class="card-desc">Primeira versão do LAVAI. Referência histórica do design inicial.</div>
       <div class="card-cta">Ver protótipo</div>
     </a>
+    <a href="lavai-404.html" class="card">
+      <span class="card-badge badge-new">Novo</span>
+      <div class="card-icon">🔍</div>
+      <div class="card-label">Erro</div>
+      <div class="card-title">Página 404</div>
+      <div class="card-desc">Página personalizada para rotas não encontradas. Design dark premium com sugestões de navegação.</div>
+      <div class="card-cta">Ver página 404</div>
+    </a>
   </div>
 </section>
 
@@ -229,8 +277,8 @@ footer{border-top:1px solid rgba(255,255,255,0.06);padding:32px 5%;display:flex;
 
 <footer>
   <div class="logo" style="font-size:15px"><div class="logo-sq" style="width:24px;height:24px;font-size:11px">💧</div>LAVAI</div>
-  <div class="footer-copy">© 2026 LAVAI — Todos os produtos</div>
-  <div style="font-size:12px;color:var(--gray2)">8 módulos · Next.js 14 · TypeScript</div>
+  <div class="footer-copy">© 2026 LAVAI — Todos os produtos · Feito com ❤️ no Brasil</div>
+  <div style="font-size:12px;color:var(--gray2)">9 módulos · Next.js 14 · TypeScript · <span id="footerBuild" style="color:var(--cyan)"></span></div>
 </footer>
 
 <script>
@@ -241,6 +289,14 @@ function copyCmd(el){
     setTimeout(()=>{s.textContent='copiar';s.style.color='';},2000);
   });
 }
+
+// Build date
+const now = new Date();
+const buildStr = now.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const buildEl = document.getElementById('buildDate');
+const footerBuild = document.getElementById('footerBuild');
+if(buildEl) buildEl.textContent = buildStr;
+if(footerBuild) footerBuild.textContent = 'Build ' + buildStr;
 </script>
 </body>
 </html>

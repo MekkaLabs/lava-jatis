@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Página não encontrada | LAVAI</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#08090f">
+<style>
+:root {
+  --bg: #08090f;
+  --bg2: #0e0f1a;
+  --bg3: #13141f;
+  --cyan: #00d4ff;
+  --green: #00e676;
+  --white: #ffffff;
+  --gray1: #e2e4ee;
+  --gray2: #8b8fa8;
+  --gray3: #3a3d52;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--gray1);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  position: relative;
+  overflow: hidden;
+}
+a { color: inherit; text-decoration: none; }
+
+/* Mesh background */
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+}
+.mesh-blob:nth-child(1) {
+  width: 600px; height: 600px;
+  background: rgba(0,212,255,0.05);
+  top: -100px; left: -200px;
+}
+.mesh-blob:nth-child(2) {
+  width: 400px; height: 400px;
+  background: rgba(0,230,118,0.04);
+  bottom: -50px; right: -100px;
+}
+
+/* Content */
+.container {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 520px;
+}
+
+/* Logo */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--white);
+  margin-bottom: 56px;
+}
+.logo-sq {
+  width: 34px; height: 34px;
+  background: var(--cyan);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: #000;
+}
+
+/* 404 Number */
+.error-number {
+  font-size: clamp(100px, 20vw, 160px);
+  font-weight: 900;
+  letter-spacing: -6px;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--cyan) 0%, #0099cc 50%, var(--cyan) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+  margin-bottom: 24px;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+}
+
+/* Car icon */
+.car-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 24px;
+  animation: carBounce 2s ease-in-out infinite;
+}
+@keyframes carBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Message */
+.error-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+.error-desc {
+  font-size: 16px;
+  color: var(--gray2);
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.btn-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  border-radius: 12px;
+  background: var(--cyan);
+  color: #000;
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: all .25s;
+}
+.btn-home:hover {
+  background: #33dcff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,212,255,0.35);
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gray2);
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid var(--gray3);
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-secondary:hover { border-color: var(--gray2); color: var(--white); }
+
+/* Suggestions */
+.suggestions {
+  margin-top: 48px;
+  padding: 28px;
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  text-align: left;
+}
+.suggestions-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 16px;
+}
+.suggestion-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.suggestion-list li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--gray2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: all .2s;
+}
+.suggestion-list li a:hover {
+  background: rgba(0,212,255,0.06);
+  color: var(--white);
+}
+.suggestion-list li a span:first-child { font-size: 18px; }
+
+/* Footer note */
+.footer-note {
+  margin-top: 40px;
+  font-size: 13px;
+  color: var(--gray3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .car-icon, .error-number { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="mesh-bg" aria-hidden="true">
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+</div>
+
+<div class="container">
+  <!-- Logo -->
+  <a href="lavai-landing.html" class="logo">
+    <div class="logo-sq">💧</div>
+    LAVAI
+  </a>
+
+  <!-- 404 -->
+  <div class="error-number">404</div>
+
+  <!-- Car -->
+  <span class="car-icon" role="img" aria-label="Carro perdido">🚗</span>
+
+  <!-- Message -->
+  <h1 class="error-title">Essa página se perdeu no caminho...</h1>
+  <p class="error-desc">Como um carro sem placa, não conseguimos encontrar o que você procura. Mas calma — o LAVAI conhece todos os caminhos.</p>
+
+  <!-- Actions -->
+  <div class="actions">
+    <a href="lavai-landing.html" class="btn-home">
+      Voltar para o início →
+    </a>
+    <a href="lavai-dashboard.html" class="btn-secondary">
+      Ir para o Dashboard
+    </a>
+  </div>
+
+  <!-- Suggestions -->
+  <div class="suggestions">
+    <div class="suggestions-title">Você pode estar procurando</div>
+    <ul class="suggestion-list">
+      <li>
+        <a href="lavai-landing.html">
+          <span>🚀</span>
+          <span>Landing Page — Conheça o LAVAI</span>
+        </a>
+      </li>
+      <li>
+        <a href="lavai-dashboard.html">
+          <span>📊</span>
+          <span>Dashboard — Painel de controle</span>
+        </a>
+      </li>
+      <li>
+        <a href="lavai-onboarding.html">
+          <span>🎯</span>
+          <span>Começar grátis — Configuração inicial</span>
+        </a>
+      </li>
+      <li>
+        <a href="index.html">
+          <span>🗂️</span>
+          <span>Central de Produtos — Todos os módulos</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="footer-note">© 2026 LAVAI — Feito com ❤️ no Brasil</div>
+</div>
+
+</body>
+</html>
