@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+lavai-app/node_modules/
+
+# Next.js build
+.next/
+lavai-app/.next/
+out/
+lavai-app/out/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vercel
+.vercel/
+
+# Editor
+.vscode/
+.idea/

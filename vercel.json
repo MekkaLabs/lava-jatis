@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "name": "lavai",
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ],
+  "regions": ["gru1"]
+}

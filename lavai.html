@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LAVAI — O Sistema Operacional do Lava-Jato Moderno</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg:       #08090f;
+    --bg2:      #0d0f1a;
+    --bg3:      #12152a;
+    --cyan:     #00d4ff;
+    --blue:     #4f8eff;
+    --green:    #00e676;
+    --purple:   #a855f7;
+    --text:     #f0f4ff;
+    --muted:    #6b7280;
+    --border:   rgba(255,255,255,0.07);
+    --glass:    rgba(255,255,255,0.04);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:0; opacity:.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 40px;
+    background: rgba(8,9,15,0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.6rem; font-weight:700; letter-spacing:-0.5px;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .logo span { color: var(--green); -webkit-text-fill-color: var(--green); }
+  nav ul { display:flex; gap:32px; list-style:none; }
+  nav ul a { color:var(--muted); text-decoration:none; font-size:.9rem; font-weight:500; transition:.2s; }
+  nav ul a:hover { color:var(--text); }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    color:#000; font-weight:700; font-size:.85rem; padding:10px 22px;
+    border-radius:50px; border:none; cursor:pointer; text-decoration:none;
+    transition:.2s; letter-spacing:.3px;
+  }
+  .nav-cta:hover { transform:translateY(-1px); box-shadow:0 8px 30px rgba(0,212,255,.3); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:120px 24px 80px;
+    position:relative; overflow:hidden;
+  }
+
+  /* animated grid */
+  .hero-grid {
+    position:absolute; inset:0; z-index:0;
+    background-image:
+      linear-gradient(rgba(79,142,255,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,255,.06) 1px, transparent 1px);
+    background-size:60px 60px;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+    animation: gridMove 20s linear infinite;
+  }
+  @keyframes gridMove { from{transform:translateY(0)} to{transform:translateY(60px)} }
+
+  /* glow orbs */
+  .orb {
+    position:absolute; border-radius:50%; filter:blur(80px); pointer-events:none; z-index:0;
+    animation: float 8s ease-in-out infinite;
+  }
+  .orb1 { width:500px; height:500px; background:rgba(0,212,255,.12); top:-100px; left:-100px; }
+  .orb2 { width:400px; height:400px; background:rgba(79,142,255,.1); bottom:-50px; right:-50px; animation-delay:-4s; }
+  .orb3 { width:300px; height:300px; background:rgba(0,230,118,.08); top:50%; left:50%; transform:translate(-50%,-50%); animation-delay:-2s; }
+  @keyframes float {
+    0%,100%{transform:translateY(0) scale(1)}
+    50%{transform:translateY(-30px) scale(1.05)}
+  }
+
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.2);
+    padding:8px 18px; border-radius:50px; font-size:.8rem; font-weight:600;
+    color:var(--cyan); margin-bottom:28px; position:relative; z-index:1;
+    animation:fadeUp .6s ease;
+  }
+  .badge-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.4)} 50%{box-shadow:0 0 0 6px rgba(0,230,118,0)} }
+
+  .hero h1 {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(3rem, 7vw, 6rem);
+    font-weight:800; line-height:1.05; letter-spacing:-2px;
+    position:relative; z-index:1;
+    animation:fadeUp .7s ease .1s both;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(135deg, #fff 30%, var(--cyan) 70%, var(--blue));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .hero h1 .accent { color:var(--cyan); -webkit-text-fill-color:var(--cyan); }
+
+  .hero-sub {
+    font-size:clamp(1rem,2vw,1.25rem); color:var(--muted); max-width:620px;
+    line-height:1.7; margin:24px auto 0; position:relative; z-index:1;
+    animation:fadeUp .7s ease .2s both;
+  }
+  .hero-sub strong { color:var(--text); }
+
+  .hero-actions {
+    display:flex; gap:16px; margin-top:40px; position:relative; z-index:1;
+    animation:fadeUp .7s ease .3s both; flex-wrap:wrap; justify-content:center;
+  }
+  .btn-primary {
+    background:linear-gradient(135deg, var(--cyan), var(--blue));
+    color:#000; font-weight:700; font-size:1rem; padding:16px 36px;
+    border-radius:50px; border:none; cursor:pointer; transition:.25s;
+    box-shadow:0 0 40px rgba(0,212,255,.2);
+  }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 12px 40px rgba(0,212,255,.35); }
+  .btn-ghost {
+    background:var(--glass); border:1px solid var(--border); color:var(--text);
+    font-weight:600; font-size:1rem; padding:16px 32px; border-radius:50px;
+    cursor:pointer; backdrop-filter:blur(10px); transition:.25s;
+  }
+  .btn-ghost:hover { border-color:rgba(255,255,255,.2); background:rgba(255,255,255,.07); }
+
+  .hero-stats {
+    display:flex; gap:48px; margin-top:60px; position:relative; z-index:1;
+    animation:fadeUp .7s ease .4s both;
+  }
+  .stat { text-align:center; }
+  .stat-number {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:2.2rem; font-weight:700;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .stat-label { font-size:.8rem; color:var(--muted); margin-top:4px; }
+
+  @keyframes fadeUp {
+    from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)}
+  }
+
+  /* ── SECTION BASE ── */
+  section { position:relative; z-index:1; }
+  .container { max-width:1200px; margin:0 auto; padding:0 24px; }
+  .section-label {
+    display:inline-block; font-size:.75rem; font-weight:700; letter-spacing:2px;
+    text-transform:uppercase; color:var(--cyan); margin-bottom:16px;
+  }
+  .section-title {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(2rem,4vw,3rem); font-weight:700; letter-spacing:-1px; line-height:1.15;
+  }
+  .section-sub { color:var(--muted); font-size:1.05rem; line-height:1.7; margin-top:12px; }
+
+  /* ── PROBLEMS ── */
+  .problems { padding:100px 0; }
+  .problems-grid {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:56px;
+  }
+  .problem-card {
+    background:var(--glass); border:1px solid var(--border);
+    border-radius:20px; padding:28px 28px 24px;
+    backdrop-filter:blur(10px); transition:.3s;
+  }
+  .problem-card:hover { border-color:rgba(255,100,100,.2); transform:translateY(-4px); background:rgba(255,80,80,.03); }
+  .problem-icon { font-size:1.8rem; margin-bottom:16px; }
+  .problem-card h3 { font-size:1.05rem; font-weight:600; margin-bottom:8px; }
+  .problem-card p { font-size:.9rem; color:var(--muted); line-height:1.6; }
+
+  /* ── DASHBOARD PREVIEW ── */
+  .dashboard-section { padding:80px 0 100px; }
+  .dashboard-section .section-title { text-align:center; }
+  .dashboard-section .section-sub { text-align:center; max-width:560px; margin:12px auto 0; }
+  .dashboard-section .section-label { display:block; text-align:center; }
+
+  .dashboard-wrap {
+    margin-top:56px;
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:24px; overflow:hidden;
+    box-shadow:0 40px 100px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05);
+  }
+
+  /* browser bar */
+  .browser-bar {
+    background:var(--bg3); padding:12px 20px; display:flex; align-items:center; gap:12px;
+    border-bottom:1px solid var(--border);
+  }
+  .browser-dots { display:flex; gap:6px; }
+  .browser-dots span { width:12px; height:12px; border-radius:50%; }
+  .dot-r{background:#ff5f56;} .dot-y{background:#ffbd2e;} .dot-g{background:#27c93f;}
+  .browser-url {
+    flex:1; background:rgba(255,255,255,.05); border:1px solid var(--border);
+    border-radius:8px; padding:6px 14px; font-size:.8rem; color:var(--muted);
+    max-width:340px; margin:0 auto;
+  }
+
+  /* dashboard layout */
+  .dash {
+    display:grid; grid-template-columns:220px 1fr; min-height:560px;
+  }
+
+  /* sidebar */
+  .dash-sidebar {
+    background:rgba(8,9,15,.6); border-right:1px solid var(--border); padding:24px 16px;
+  }
+  .dash-logo {
+    font-family:'Space Grotesk',sans-serif; font-size:1.3rem; font-weight:700;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    margin-bottom:32px; padding:0 8px;
+  }
+  .dash-nav { display:flex; flex-direction:column; gap:4px; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border-radius:10px; font-size:.85rem; color:var(--muted); cursor:pointer;
+    transition:.2s; font-weight:500;
+  }
+  .nav-item:hover { background:var(--glass); color:var(--text); }
+  .nav-item.active { background:rgba(0,212,255,.1); color:var(--cyan); }
+  .nav-item .icon { font-size:1rem; width:20px; text-align:center; }
+
+  .dash-main { padding:24px; overflow:hidden; }
+
+  /* metrics row */
+  .metrics-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .metric-card {
+    background:var(--glass); border:1px solid var(--border);
+    border-radius:14px; padding:16px 18px;
+  }
+  .metric-label { font-size:.73rem; color:var(--muted); font-weight:500; margin-bottom:4px; }
+  .metric-value {
+    font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:700;
+  }
+  .metric-value.green { color:var(--green); }
+  .metric-value.cyan { color:var(--cyan); }
+  .metric-value.blue { color:var(--blue); }
+  .metric-value.purple { color:var(--purple); }
+  .metric-delta { font-size:.72rem; color:#34d399; margin-top:4px; }
+  .metric-delta.down { color:#f87171; }
+
+  /* queue + chart row */
+  .dash-row { display:grid; grid-template-columns:1fr 280px; gap:12px; }
+
+  /* queue */
+  .queue-panel {
+    background:var(--glass); border:1px solid var(--border); border-radius:14px; padding:18px;
+  }
+  .panel-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+  }
+  .panel-title { font-size:.85rem; font-weight:600; }
+  .live-badge {
+    display:flex; align-items:center; gap:5px; font-size:.7rem; color:var(--green); font-weight:600;
+  }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+
+  .queue-item {
+    display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px;
+    margin-bottom:6px; background:rgba(255,255,255,.03); border:1px solid var(--border);
+    transition:.2s;
+  }
+  .queue-item:hover { background:rgba(255,255,255,.06); }
+
+  .q-avatar {
+    width:36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.9rem; font-weight:700; flex-shrink:0;
+  }
+  .q-a1{background:rgba(0,212,255,.15);color:var(--cyan);}
+  .q-a2{background:rgba(168,85,247,.15);color:var(--purple);}
+  .q-a3{background:rgba(0,230,118,.15);color:var(--green);}
+  .q-a4{background:rgba(79,142,255,.15);color:var(--blue);}
+  .q-a5{background:rgba(251,191,36,.15);color:#fbbf24;}
+
+  .q-info { flex:1; min-width:0; }
+  .q-name { font-size:.83rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .q-plate { font-size:.72rem; color:var(--muted); margin-top:2px; font-family:monospace; }
+  .q-service { font-size:.72rem; color:var(--muted); }
+
+  .q-status {
+    font-size:.7rem; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap;
+  }
+  .s-waiting { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.2); }
+  .s-progress { background:rgba(0,212,255,.12); color:var(--cyan); border:1px solid rgba(0,212,255,.2); }
+  .s-done { background:rgba(0,230,118,.12); color:var(--green); border:1px solid rgba(0,230,118,.2); }
+
+  .q-time { font-size:.7rem; color:var(--muted); min-width:40px; text-align:right; }
+
+  /* mini chart */
+  .chart-panel {
+    background:var(--glass); border:1px solid var(--border); border-radius:14px; padding:18px;
+  }
+  .chart-bars {
+    display:flex; align-items:flex-end; gap:6px; height:100px; margin-top:16px;
+  }
+  .bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .bar {
+    width:100%; border-radius:4px 4px 0 0;
+    background:linear-gradient(to top, var(--blue), var(--cyan));
+    opacity:.7; transition:.3s;
+  }
+  .bar:hover { opacity:1; }
+  .bar-label { font-size:.62rem; color:var(--muted); }
+
+  /* whatsapp panel */
+  .wa-panel {
+    margin-top:12px;
+    background:var(--glass); border:1px solid var(--border); border-radius:14px; padding:18px;
+    display:flex; align-items:flex-start; gap:14px;
+  }
+  .wa-icon {
+    width:36px; height:36px; border-radius:10px;
+    background:rgba(37,211,102,.15); color:#25d366;
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;
+  }
+  .wa-content { flex:1; }
+  .wa-title { font-size:.8rem; font-weight:600; margin-bottom:8px; }
+  .wa-msg {
+    background:rgba(37,211,102,.06); border:1px solid rgba(37,211,102,.1);
+    border-radius:8px; padding:8px 12px; font-size:.75rem; color:var(--muted);
+    line-height:1.5; margin-bottom:6px;
+  }
+  .wa-msg strong { color:var(--text); }
+  .wa-sent { font-size:.68rem; color:var(--muted); text-align:right; }
+
+  /* AI insight */
+  .ai-panel {
+    margin-top:12px;
+    background:linear-gradient(135deg,rgba(79,142,255,.08),rgba(168,85,247,.08));
+    border:1px solid rgba(79,142,255,.15);
+    border-radius:14px; padding:16px 18px;
+    display:flex; align-items:flex-start; gap:12px;
+  }
+  .ai-icon {
+    width:32px; height:32px; border-radius:8px;
+    background:linear-gradient(135deg,var(--blue),var(--purple));
+    display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0;
+  }
+  .ai-text { font-size:.8rem; line-height:1.5; color:var(--muted); }
+  .ai-text strong { color:var(--blue); }
+
+  /* ── FEATURES ── */
+  .features { padding:100px 0; }
+  .features-inner {
+    display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center;
+  }
+  .feat-list { display:flex; flex-direction:column; gap:24px; margin-top:40px; }
+  .feat-item { display:flex; gap:16px; align-items:flex-start; }
+  .feat-icon-wrap {
+    width:44px; height:44px; border-radius:12px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+  }
+  .fi-cyan { background:rgba(0,212,255,.12); border:1px solid rgba(0,212,255,.2); }
+  .fi-green { background:rgba(0,230,118,.12); border:1px solid rgba(0,230,118,.2); }
+  .fi-purple { background:rgba(168,85,247,.12); border:1px solid rgba(168,85,247,.2); }
+  .fi-blue { background:rgba(79,142,255,.12); border:1px solid rgba(79,142,255,.2); }
+  .feat-item h3 { font-size:1rem; font-weight:600; margin-bottom:4px; }
+  .feat-item p { font-size:.88rem; color:var(--muted); line-height:1.6; }
+
+  .features-visual {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:24px; padding:32px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+  }
+  .phone-mockup {
+    max-width:280px; margin:0 auto;
+  }
+  .phone-frame {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:28px; padding:16px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.05), 0 30px 60px rgba(0,0,0,.5);
+  }
+  .phone-notch {
+    width:80px; height:6px; background:var(--bg); border-radius:3px;
+    margin:0 auto 16px;
+  }
+  .phone-screen { }
+  .phone-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+  }
+  .phone-logo { font-size:.85rem; font-weight:700; color:var(--cyan); font-family:'Space Grotesk',sans-serif; }
+  .phone-status {
+    font-size:.65rem; background:rgba(0,230,118,.12); color:var(--green);
+    padding:3px 8px; border-radius:20px; font-weight:600;
+  }
+
+  .wa-preview {
+    background:rgba(37,211,102,.06); border:1px solid rgba(37,211,102,.1);
+    border-radius:12px; padding:14px;
+  }
+  .wa-header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .wa-avatar {
+    width:30px; height:30px; border-radius:50%; background:rgba(37,211,102,.2);
+    display:flex; align-items:center; justify-content:center; font-size:.8rem;
+  }
+  .wa-sender { font-size:.78rem; font-weight:600; color:#25d366; }
+  .wa-bubble {
+    background:rgba(255,255,255,.05); border-radius:0 10px 10px 10px;
+    padding:10px 12px; font-size:.75rem; line-height:1.6; color:var(--text);
+    margin-bottom:8px;
+  }
+  .wa-reply {
+    background:rgba(37,211,102,.15); border-radius:10px 0 10px 10px;
+    padding:10px 12px; font-size:.75rem; color:#25d366; text-align:right;
+    font-weight:500;
+  }
+
+  .booking-card {
+    background:var(--glass); border:1px solid var(--border);
+    border-radius:14px; padding:16px; margin-top:12px;
+  }
+  .booking-title { font-size:.78rem; font-weight:600; margin-bottom:12px; color:var(--cyan); }
+  .booking-slot {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px; border-radius:8px; margin-bottom:6px; cursor:pointer;
+    transition:.2s; border:1px solid transparent;
+  }
+  .booking-slot:hover { background:rgba(255,255,255,.05); }
+  .booking-slot.selected { background:rgba(0,212,255,.1); border-color:rgba(0,212,255,.2); }
+  .slot-time { font-size:.78rem; font-weight:600; }
+  .slot-avail { font-size:.68rem; color:var(--muted); }
+  .slot-badge {
+    font-size:.65rem; padding:3px 8px; border-radius:20px; font-weight:600;
+  }
+  .slot-open { background:rgba(0,230,118,.12); color:var(--green); }
+  .slot-busy { background:rgba(251,191,36,.12); color:#fbbf24; }
+
+  /* ── PRICING ── */
+  .pricing { padding:100px 0; }
+  .pricing-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:56px;
+  }
+  .price-card {
+    background:var(--glass); border:1px solid var(--border);
+    border-radius:24px; padding:36px 28px; transition:.3s; position:relative;
+  }
+  .price-card:hover { transform:translateY(-4px); }
+  .price-card.featured {
+    background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(79,142,255,.08));
+    border-color:rgba(0,212,255,.3);
+    box-shadow:0 0 60px rgba(0,212,255,.1);
+  }
+  .featured-badge {
+    position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    color:#000; font-size:.72rem; font-weight:700; padding:5px 16px;
+    border-radius:50px; white-space:nowrap;
+  }
+  .price-plan { font-size:.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+  .price-value {
+    font-family:'Space Grotesk',sans-serif; font-size:3rem; font-weight:800;
+    line-height:1; margin-bottom:4px;
+  }
+  .price-value span { font-size:1.2rem; font-weight:400; color:var(--muted); }
+  .price-period { font-size:.8rem; color:var(--muted); margin-bottom:24px; }
+  .price-divider { border:none; border-top:1px solid var(--border); margin:24px 0; }
+  .price-features { display:flex; flex-direction:column; gap:10px; }
+  .pf-item { display:flex; align-items:center; gap:10px; font-size:.85rem; }
+  .pf-item .check { color:var(--green); font-size:.9rem; }
+  .pf-item .cross { color:var(--muted); font-size:.9rem; }
+  .price-btn {
+    width:100%; margin-top:28px; padding:14px; border-radius:12px;
+    font-size:.9rem; font-weight:700; cursor:pointer; transition:.25s; border:none;
+  }
+  .price-btn-ghost {
+    background:var(--glass); border:1px solid var(--border); color:var(--text);
+  }
+  .price-btn-ghost:hover { background:rgba(255,255,255,.08); }
+  .price-btn-primary {
+    background:linear-gradient(135deg,var(--cyan),var(--blue)); color:#000;
+  }
+  .price-btn-primary:hover { box-shadow:0 8px 30px rgba(0,212,255,.3); transform:translateY(-1px); }
+
+  /* ── CTA ── */
+  .cta-section {
+    padding:100px 0;
+    text-align:center;
+  }
+  .cta-box {
+    background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(79,142,255,.08));
+    border:1px solid rgba(0,212,255,.15);
+    border-radius:32px; padding:72px 40px;
+    position:relative; overflow:hidden;
+  }
+  .cta-box::before {
+    content:'';
+    position:absolute; top:-50%; left:50%; transform:translateX(-50%);
+    width:600px; height:300px; border-radius:50%;
+    background:radial-gradient(ellipse,rgba(0,212,255,.12),transparent 70%);
+    pointer-events:none;
+  }
+  .cta-box h2 {
+    font-family:'Space Grotesk',sans-serif; font-size:clamp(2rem,4vw,3.2rem);
+    font-weight:800; letter-spacing:-1px; position:relative;
+  }
+  .cta-box p { color:var(--muted); font-size:1.1rem; margin:16px 0 36px; position:relative; }
+  .cta-box .btn-primary { position:relative; font-size:1.05rem; padding:18px 44px; }
+  .cta-note { font-size:.8rem; color:var(--muted); margin-top:16px; position:relative; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top:1px solid var(--border); padding:40px 0;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  footer .logo { font-size:1.2rem; }
+  footer p { font-size:.8rem; color:var(--muted); }
+
+  /* ── ANIMATIONS on scroll ── */
+  .reveal { opacity:0; transform:translateY(32px); transition:.7s ease; }
+  .revealed { opacity:1; transform:translateY(0); }
+
+  /* ── TICKER ── */
+  .ticker-wrap {
+    overflow:hidden; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+    padding:14px 0; background:rgba(0,212,255,.02);
+  }
+  .ticker {
+    display:flex; gap:48px; animation:ticker 20s linear infinite; width:max-content;
+  }
+  @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .ticker-item {
+    display:flex; align-items:center; gap:10px; font-size:.8rem; font-weight:500; color:var(--muted); white-space:nowrap;
+  }
+  .ticker-item .dot { color:var(--cyan); }
+
+  @media(max-width:768px){
+    nav ul{display:none}
+    .dash{grid-template-columns:1fr}
+    .dash-sidebar{display:none}
+    .metrics-row{grid-template-columns:repeat(2,1fr)}
+    .dash-row{grid-template-columns:1fr}
+    .chart-panel{display:none}
+    .features-inner{grid-template-columns:1fr}
+    .pricing-grid{grid-template-columns:1fr}
+    .hero-stats{gap:24px}
+    nav{padding:14px 20px}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">LAV<span>AI</span></div>
+  <ul>
+    <li><a href="#problema">Problema</a></li>
+    <li><a href="#produto">Produto</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#precos">Preços</a></li>
+  </ul>
+  <a href="#precos" class="nav-cta">Começar grátis →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    Lançamento MVP — Vagas limitadas para early adopters
+  </div>
+
+  <h1>
+    <span class="grad">O sistema operacional</span><br>
+    do <span class="accent">lava-jato</span> moderno
+  </h1>
+
+  <p class="hero-sub">
+    <strong>Agendamento inteligente, fila em tempo real, WhatsApp bot com IA</strong> e programa de fidelidade Web3 — tudo em um único sistema feito para o mercado brasileiro.
+  </p>
+
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="document.getElementById('precos').scrollIntoView({behavior:'smooth'})">Começar grátis por 30 dias</button>
+    <button class="btn-ghost" onclick="document.getElementById('produto').scrollIntoView({behavior:'smooth'})">Ver o produto →</button>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-number">+400k</div>
+      <div class="stat-label">lava-jatos no Brasil</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">R$8bi</div>
+      <div class="stat-label">mercado anual</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">&lt;5%</div>
+      <div class="stat-label">usam sistema hoje</div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <div class="ticker-item"><span class="dot">✦</span> Agendamento com IA</div>
+    <div class="ticker-item"><span class="dot">✦</span> Fila em tempo real</div>
+    <div class="ticker-item"><span class="dot">✦</span> WhatsApp Bot nativo</div>
+    <div class="ticker-item"><span class="dot">✦</span> Fidelidade Web3</div>
+    <div class="ticker-item"><span class="dot">✦</span> PIX integrado</div>
+    <div class="ticker-item"><span class="dot">✦</span> Multi-unidades</div>
+    <div class="ticker-item"><span class="dot">✦</span> Dashboard em tempo real</div>
+    <div class="ticker-item"><span class="dot">✦</span> Relatórios com IA</div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span class="dot">✦</span> Agendamento com IA</div>
+    <div class="ticker-item"><span class="dot">✦</span> Fila em tempo real</div>
+    <div class="ticker-item"><span class="dot">✦</span> WhatsApp Bot nativo</div>
+    <div class="ticker-item"><span class="dot">✦</span> Fidelidade Web3</div>
+    <div class="ticker-item"><span class="dot">✦</span> PIX integrado</div>
+    <div class="ticker-item"><span class="dot">✦</span> Multi-unidades</div>
+    <div class="ticker-item"><span class="dot">✦</span> Dashboard em tempo real</div>
+    <div class="ticker-item"><span class="dot">✦</span> Relatórios com IA</div>
+  </div>
+</div>
+
+<!-- PROBLEMS -->
+<section class="problems" id="problema">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">O Diagnóstico</div>
+      <h2 class="section-title">Todo lava-jato tem<br>os mesmos 6 problemas</h2>
+      <p class="section-sub">Perguntas que nenhum dono consegue responder agora mesmo.</p>
+    </div>
+    <div class="problems-grid">
+      <div class="problem-card reveal">
+        <div class="problem-icon">🔴</div>
+        <h3>"Quanto tempo falta pro meu carro?"</h3>
+        <p>Cliente não sabe. Fica esperando. Fica irritado. Vai embora. Não volta. Você perdeu o cliente e não sabe.</p>
+      </div>
+      <div class="problem-card reveal">
+        <div class="problem-icon">🔴</div>
+        <h3>"Quantos carros lavei essa semana?"</h3>
+        <p>Você não tem esse número agora. Está no caderno, no papel, na cabeça do caixa. Não tem como saber.</p>
+      </div>
+      <div class="problem-card reveal">
+        <div class="problem-icon">🔴</div>
+        <h3>"Por que aquele cliente sumiu?"</h3>
+        <p>Você não sabe nem quem ele é. Não tem cadastro, não tem histórico, não tem como chamar de volta.</p>
+      </div>
+      <div class="problem-card reveal">
+        <div class="problem-icon">🔴</div>
+        <h3>"Qual horário é mais cheio?"</h3>
+        <p>Você chuta. Às vezes acerta. Às vezes lota no horário errado e fica vazio quando poderia estar cheio.</p>
+      </div>
+      <div class="problem-card reveal">
+        <div class="problem-icon">🔴</div>
+        <h3>"Por que o cliente não volta?"</h3>
+        <p>Sem programa de fidelidade real. O concorrente da esquina deu um desconto e levou o seu cliente.</p>
+      </div>
+      <div class="problem-card reveal">
+        <div class="problem-icon">🔴</div>
+        <h3>"Quanto minha rede faturou hoje?"</h3>
+        <p>Se você tem mais de uma unidade, você não tem essa visão agora. Nunca teve.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<section class="dashboard-section" id="produto">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">O Produto</div>
+      <h2 class="section-title">Tudo que você precisa,<br>em um painel</h2>
+      <p class="section-sub">Veja a fila em tempo real, gerencie clientes, receba insights de IA — do celular ou computador.</p>
+    </div>
+
+    <div class="dashboard-wrap reveal">
+      <!-- browser bar -->
+      <div class="browser-bar">
+        <div class="browser-dots">
+          <span class="dot-r"></span>
+          <span class="dot-y"></span>
+          <span class="dot-g"></span>
+        </div>
+        <div class="browser-url">app.lavai.com.br/dashboard</div>
+      </div>
+
+      <!-- dashboard -->
+      <div class="dash">
+        <!-- sidebar -->
+        <div class="dash-sidebar">
+          <div class="dash-logo">LAVAI</div>
+          <div class="dash-nav">
+            <div class="nav-item active"><span class="icon">📊</span> Dashboard</div>
+            <div class="nav-item"><span class="icon">🚗</span> Fila ao Vivo</div>
+            <div class="nav-item"><span class="icon">📅</span> Agendamentos</div>
+            <div class="nav-item"><span class="icon">👥</span> Clientes</div>
+            <div class="nav-item"><span class="icon">💬</span> WhatsApp Bot</div>
+            <div class="nav-item"><span class="icon">💎</span> Fidelidade</div>
+            <div class="nav-item"><span class="icon">💰</span> Financeiro</div>
+            <div class="nav-item"><span class="icon">⚙️</span> Configurações</div>
+          </div>
+        </div>
+
+        <!-- main -->
+        <div class="dash-main">
+          <!-- metrics -->
+          <div class="metrics-row">
+            <div class="metric-card">
+              <div class="metric-label">Carros hoje</div>
+              <div class="metric-value cyan" id="m-carros">23</div>
+              <div class="metric-delta">↑ +4 vs. ontem</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Receita hoje</div>
+              <div class="metric-value green" id="m-receita">R$1.840</div>
+              <div class="metric-delta">↑ +12% vs. ontem</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Na fila agora</div>
+              <div class="metric-value blue" id="m-fila">5</div>
+              <div class="metric-delta">↑ 2 chegando</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Clientes únicos</div>
+              <div class="metric-value purple">347</div>
+              <div class="metric-delta">↑ +8 este mês</div>
+            </div>
+          </div>
+
+          <!-- queue + chart -->
+          <div class="dash-row">
+            <div class="queue-panel">
+              <div class="panel-header">
+                <div class="panel-title">Fila ao Vivo</div>
+                <div class="live-badge"><span class="live-dot"></span> Ao vivo</div>
+              </div>
+
+              <div class="queue-item">
+                <div class="q-avatar q-a1">JC</div>
+                <div class="q-info">
+                  <div class="q-name">João Carlos</div>
+                  <div class="q-plate">🚗 ABC-1234 · Civic Prata</div>
+                  <div class="q-service">Lavagem Completa + Polimento</div>
+                </div>
+                <div class="q-status s-progress">Em andamento</div>
+                <div class="q-time">18 min</div>
+              </div>
+
+              <div class="queue-item">
+                <div class="q-avatar q-a2">RS</div>
+                <div class="q-info">
+                  <div class="q-name">Renata Silva</div>
+                  <div class="q-plate">🚙 XYZ-5678 · HB20 Branco</div>
+                  <div class="q-service">Lavagem Simples</div>
+                </div>
+                <div class="q-status s-progress">Em andamento</div>
+                <div class="q-time">8 min</div>
+              </div>
+
+              <div class="queue-item">
+                <div class="q-avatar q-a3">MF</div>
+                <div class="q-info">
+                  <div class="q-name">Marcos Ferreira</div>
+                  <div class="q-plate">🚗 DEF-9012 · Corolla Preto</div>
+                  <div class="q-service">Higienização Interna</div>
+                </div>
+                <div class="q-status s-waiting">Aguardando</div>
+                <div class="q-time">~25 min</div>
+              </div>
+
+              <div class="queue-item">
+                <div class="q-avatar q-a4">LP</div>
+                <div class="q-info">
+                  <div class="q-name">Lúcia Pinto</div>
+                  <div class="q-plate">🚗 GHI-3456 · Gol Vermelho</div>
+                  <div class="q-service">Lavagem Completa</div>
+                </div>
+                <div class="q-status s-waiting">Aguardando</div>
+                <div class="q-time">~40 min</div>
+              </div>
+
+              <div class="queue-item">
+                <div class="q-avatar q-a5">BL</div>
+                <div class="q-info">
+                  <div class="q-name">Bruno Lima</div>
+                  <div class="q-plate">🚙 JKL-7890 · Kicks Cinza</div>
+                  <div class="q-service">Lavagem + Cera</div>
+                </div>
+                <div class="q-status s-done">✓ Pronto</div>
+                <div class="q-time">Notificado</div>
+              </div>
+            </div>
+
+            <div class="chart-panel">
+              <div class="panel-header">
+                <div class="panel-title">Carros / dia</div>
+              </div>
+              <div class="chart-bars">
+                <div class="bar-wrap"><div class="bar" style="height:55%"></div><div class="bar-label">Seg</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:70%"></div><div class="bar-label">Ter</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:45%"></div><div class="bar-label">Qua</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:85%"></div><div class="bar-label">Qui</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:100%"></div><div class="bar-label">Sex</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:90%"></div><div class="bar-label">Sáb</div></div>
+                <div class="bar-wrap"><div class="bar" style="height:40%" style="opacity:.5"></div><div class="bar-label">Dom</div></div>
+              </div>
+
+              <div class="wa-panel" style="margin-top:16px;padding:12px;">
+                <div class="wa-icon">💬</div>
+                <div class="wa-content">
+                  <div class="wa-title">WhatsApp Bot</div>
+                  <div class="wa-msg" style="font-size:.7rem;padding:6px 10px;">
+                    <strong>Bruno Lima:</strong> Meu carro tá pronto? ✅ Notificação enviada automaticamente
+                  </div>
+                  <div class="wa-sent" style="font-size:.65rem;">há 2 min · ✓✓</div>
+                </div>
+              </div>
+
+              <div class="ai-panel" style="margin-top:8px;padding:10px 14px;">
+                <div class="ai-icon">🤖</div>
+                <div class="ai-text">
+                  <strong>IA:</strong> Pico previsto às 14h30. Considere acionar um funcionário extra.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="features-inner">
+      <div>
+        <div class="reveal">
+          <div class="section-label">Features</div>
+          <h2 class="section-title">Tecnologia de ponta.<br>Operação simples.</h2>
+          <p class="section-sub">Criado para quem trabalha com as mãos, não para engenheiro.</p>
+        </div>
+        <div class="feat-list">
+          <div class="feat-item reveal">
+            <div class="feat-icon-wrap fi-cyan">🤖</div>
+            <div>
+              <h3>IA que entende seu negócio</h3>
+              <p>Agente LAVAI analisa seu histórico e sugere melhores horários, prevê demanda e gera relatórios em linguagem humana toda semana.</p>
+            </div>
+          </div>
+          <div class="feat-item reveal">
+            <div class="feat-icon-wrap fi-green">💬</div>
+            <div>
+              <h3>WhatsApp Bot 24/7</h3>
+              <p>Cliente agenda, recebe confirmação, acompanha status e é avisado quando o carro fica pronto — tudo no WhatsApp, sem nenhuma ação sua.</p>
+            </div>
+          </div>
+          <div class="feat-item reveal">
+            <div class="feat-icon-wrap fi-purple">💎</div>
+            <div>
+              <h3>Fidelidade com tokens Web3</h3>
+              <p>Cada lavagem gera tokens do cliente. Pontos que nunca expiram, são transferíveis e criam vínculo real — não mais um cartão de papel.</p>
+            </div>
+          </div>
+          <div class="feat-item reveal">
+            <div class="feat-icon-wrap fi-blue">📊</div>
+            <div>
+              <h3>Dashboard em tempo real</h3>
+              <p>Fila, receita, clientes, previsão — tudo visível no celular ou computador. Você gerencia de qualquer lugar, a qualquer hora.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- phone mockup -->
+      <div class="features-visual reveal">
+        <div class="phone-mockup">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="phone-header">
+                <div class="phone-logo">LAVAI</div>
+                <div class="phone-status">● Online</div>
+              </div>
+
+              <div class="wa-preview">
+                <div class="wa-header">
+                  <div class="wa-avatar">🤖</div>
+                  <div class="wa-sender">LAVAI Bot</div>
+                </div>
+                <div class="wa-bubble">
+                  Olá Marcos! 👋 Quer agendar sua lavagem? Tenho horários disponíveis hoje:
+                </div>
+                <div class="wa-reply">Sim, quero agendar! ✓✓</div>
+              </div>
+
+              <div class="booking-card">
+                <div class="booking-title">📅 Horários disponíveis</div>
+                <div class="booking-slot">
+                  <div><div class="slot-time">14:00</div><div class="slot-avail">Lavagem completa</div></div>
+                  <div class="slot-badge slot-open">Livre</div>
+                </div>
+                <div class="booking-slot selected">
+                  <div><div class="slot-time">15:30</div><div class="slot-avail">Qualquer serviço</div></div>
+                  <div class="slot-badge slot-open">Livre</div>
+                </div>
+                <div class="booking-slot">
+                  <div><div class="slot-time">17:00</div><div class="slot-avail">Lavagem simples</div></div>
+                  <div class="slot-badge slot-busy">Últimas vagas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="precos">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <div class="section-label">Preços</div>
+      <h2 class="section-title">Menos do que um dia de trabalho.</h2>
+      <p class="section-sub">Cancele quando quiser. Sem fidelidade.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <!-- Starter -->
+      <div class="price-card reveal">
+        <div class="price-plan">Starter</div>
+        <div class="price-value"><span>R$</span>99</div>
+        <div class="price-period">por mês · por unidade</div>
+        <div class="price-divider"></div>
+        <div class="price-features">
+          <div class="pf-item"><span class="check">✓</span> Dashboard em tempo real</div>
+          <div class="pf-item"><span class="check">✓</span> Fila de clientes ao vivo</div>
+          <div class="pf-item"><span class="check">✓</span> Cadastro ilimitado</div>
+          <div class="pf-item"><span class="check">✓</span> Agendamento básico</div>
+          <div class="pf-item"><span class="check">✓</span> Relatórios semanais</div>
+          <div class="pf-item"><span class="cross" style="color:var(--muted)">○</span> WhatsApp Bot</div>
+          <div class="pf-item"><span class="cross" style="color:var(--muted)">○</span> IA preditiva</div>
+          <div class="pf-item"><span class="cross" style="color:var(--muted)">○</span> Fidelidade Web3</div>
+        </div>
+        <button class="price-btn price-btn-ghost">Começar grátis</button>
+      </div>
+
+      <!-- Pro (featured) -->
+      <div class="price-card featured reveal">
+        <div class="featured-badge">⚡ Mais popular</div>
+        <div class="price-plan">Pro</div>
+        <div class="price-value"><span>R$</span>249</div>
+        <div class="price-period">por mês · por unidade</div>
+        <div class="price-divider"></div>
+        <div class="price-features">
+          <div class="pf-item"><span class="check">✓</span> Tudo do Starter</div>
+          <div class="pf-item"><span class="check">✓</span> WhatsApp Bot 24/7</div>
+          <div class="pf-item"><span class="check">✓</span> IA de agendamento</div>
+          <div class="pf-item"><span class="check">✓</span> Relatórios automáticos</div>
+          <div class="pf-item"><span class="check">✓</span> Programa de fidelidade</div>
+          <div class="pf-item"><span class="check">✓</span> PIX integrado</div>
+          <div class="pf-item"><span class="check">✓</span> Suporte prioritário</div>
+          <div class="pf-item"><span class="cross" style="color:var(--muted)">○</span> Multi-unidades</div>
+        </div>
+        <button class="price-btn price-btn-primary">Começar grátis por 30 dias</button>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="price-card reveal">
+        <div class="price-plan">Enterprise</div>
+        <div class="price-value"><span>R$</span>599<span style="font-size:1rem">+</span></div>
+        <div class="price-period">por mês · rede completa</div>
+        <div class="price-divider"></div>
+        <div class="price-features">
+          <div class="pf-item"><span class="check">✓</span> Tudo do Pro</div>
+          <div class="pf-item"><span class="check">✓</span> Multi-unidades</div>
+          <div class="pf-item"><span class="check">✓</span> Fidelidade Web3 (tokens)</div>
+          <div class="pf-item"><span class="check">✓</span> API pública</div>
+          <div class="pf-item"><span class="check">✓</span> Dashboard de rede</div>
+          <div class="pf-item"><span class="check">✓</span> BI e analytics avançado</div>
+          <div class="pf-item"><span class="check">✓</span> Gerente de conta dedicado</div>
+          <div class="pf-item"><span class="check">✓</span> SLA garantido</div>
+        </div>
+        <button class="price-btn price-btn-ghost">Falar com vendas</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-box reveal">
+      <h2>Pronto para transformar<br>seu lava-jato?</h2>
+      <p>Primeiro mês gratuito. Setup em 5 minutos. Cancele quando quiser.</p>
+      <button class="btn-primary">Cadastrar meu lava-jato →</button>
+      <p class="cta-note">Sem cartão de crédito. Sem burocracia.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="container">
+  <footer>
+    <div class="logo">LAV<span style="-webkit-text-fill-color:var(--green);color:var(--green)">AI</span></div>
+    <p>© 2025 LAVAI · Feito no Brasil 🇧🇷</p>
+    <p style="color:var(--muted);font-size:.8rem;">Privacidade · Termos · Contato</p>
+  </footer>
+</div>
+
+<script>
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting) {
+      e.target.classList.add('revealed');
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Live counter animation
+let carros = 23, receita = 1840, fila = 5;
+setInterval(() => {
+  // randomly update metrics to simulate live data
+  if(Math.random() > 0.7) {
+    carros++;
+    receita += Math.floor(Math.random() * 120) + 30;
+    document.getElementById('m-carros').textContent = carros;
+    document.getElementById('m-receita').textContent = 'R$' + receita.toLocaleString('pt-BR');
+  }
+  if(Math.random() > 0.8) {
+    const change = Math.random() > 0.5 ? 1 : -1;
+    fila = Math.max(1, Math.min(8, fila + change));
+    document.getElementById('m-fila').textContent = fila;
+  }
+}, 3000);
+
+// Queue status cycle animation
+const statuses = document.querySelectorAll('.q-status');
+let cycleCount = 0;
+setInterval(() => {
+  cycleCount++;
+  // every 5 seconds, pick a random "in progress" item and complete it
+  if(cycleCount % 5 === 0) {
+    const inProgress = document.querySelector('.s-progress');
+    if(inProgress) {
+      inProgress.textContent = '✓ Pronto';
+      inProgress.className = 'q-status s-done';
+    }
+    const waiting = document.querySelector('.s-waiting');
+    if(waiting) {
+      waiting.textContent = 'Em andamento';
+      waiting.className = 'q-status s-progress';
+    }
+  }
+}, 1000);
+</script>
+</body>
+</html>

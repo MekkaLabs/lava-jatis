@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAVAI — Fidelidade</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #08090f; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* Layout */
+  .page { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 32px; height: 32px; background: #00d4ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #08090f; }
+  .logo-text { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-text span { color: #00d4ff; }
+  .header-badge { background: rgba(0,212,255,0.12); color: #00d4ff; border: 1px solid rgba(0,212,255,0.25); border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 500; }
+
+  /* Stats bar */
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: #0e0f1a; border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 20px 24px; }
+  .stat-label { font-size: 12px; color: #8b8fa8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 28px; font-weight: 600; color: #ffffff; line-height: 1; }
+  .stat-sub { font-size: 12px; color: #8b8fa8; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+  .stat-up { color: #00e676; }
+
+  /* Tabs */
+  .tabs-bar { display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 24px; }
+  .tab-btn { padding: 10px 20px; background: none; border: none; color: #8b8fa8; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
+  .tab-btn:hover { color: #ffffff; }
+  .tab-btn.active { color: #00d4ff; border-bottom-color: #00d4ff; }
+
+  /* Tab panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Toolbar */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .search-wrap { position: relative; flex: 1; max-width: 360px; }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #8b8fa8; pointer-events: none; }
+  .search-input { width: 100%; background: #0e0f1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 9px 12px 9px 38px; color: #ffffff; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  .search-input::placeholder { color: #8b8fa8; }
+  .search-input:focus { border-color: rgba(0,212,255,0.4); }
+  .btn-primary { background: #00d4ff; color: #08090f; border: none; border-radius: 10px; padding: 9px 18px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-ghost { background: none; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 9px 16px; color: #8b8fa8; font-size: 14px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: #ffffff; }
+
+  /* Table */
+  .table-wrap { background: #0e0f1a; border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 500; color: #8b8fa8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.12s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  td { padding: 13px 16px; color: #ffffff; font-size: 13px; vertical-align: middle; }
+  .td-name { font-weight: 500; }
+  .td-plate { font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.06); border-radius: 6px; padding: 3px 8px; color: #8b8fa8; }
+  .td-visits { color: #8b8fa8; }
+  .td-points { font-weight: 600; color: #ffffff; }
+  .td-date { color: #8b8fa8; }
+
+  /* Level badges */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+  .badge-diamante { background: rgba(0,212,255,0.15); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
+  .badge-ouro { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+  .badge-prata { background: rgba(139,143,168,0.15); color: #b0b3c8; border: 1px solid rgba(139,143,168,0.3); }
+  .badge-bronze { background: rgba(205,127,50,0.15); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3); }
+
+  /* Action buttons */
+  .actions { display: flex; gap: 6px; }
+  .btn-sm { padding: 5px 11px; border-radius: 7px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid; transition: opacity 0.12s; }
+  .btn-sm:hover { opacity: 0.8; }
+  .btn-ver { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); color: #8b8fa8; }
+  .btn-pontuar { background: rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.3); color: #00d4ff; }
+
+  /* Pagination */
+  .pagination { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.06); color: #8b8fa8; font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+  .pagination-btns { display: flex; gap: 6px; }
+  .pag-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #8b8fa8; border-radius: 7px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  .pag-btn:hover { border-color: rgba(255,255,255,0.2); color: #ffffff; }
+
+  /* Resgates tab */
+  .resgates-list { background: #0e0f1a; border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden; }
+  .resgate-row { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.12s; }
+  .resgate-row:last-child { border-bottom: none; }
+  .resgate-row:hover { background: rgba(255,255,255,0.02); }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .av-cyan { background: rgba(0,212,255,0.18); color: #00d4ff; }
+  .av-amber { background: rgba(251,191,36,0.18); color: #fbbf24; }
+  .av-purple { background: rgba(139,92,246,0.18); color: #a78bfa; }
+  .av-green { background: rgba(0,230,118,0.18); color: #00e676; }
+  .av-rose { background: rgba(251,113,133,0.18); color: #fb7185; }
+  .resgate-info { flex: 1; }
+  .resgate-name { font-weight: 500; font-size: 13px; }
+  .resgate-plate { font-size: 11px; color: #8b8fa8; margin-top: 2px; }
+  .resgate-desc { font-size: 13px; color: #8b8fa8; flex: 1; }
+  .pts-badge { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .resgate-date { color: #8b8fa8; font-size: 12px; min-width: 50px; text-align: right; }
+  .check-icon { color: #00e676; font-size: 16px; margin-left: 6px; }
+
+  /* Configurar tab */
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .config-card { background: #0e0f1a; border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 24px; }
+  .config-card-title { font-size: 15px; font-weight: 600; margin-bottom: 20px; color: #ffffff; }
+  .config-rule { margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .config-rule:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .rule-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .rule-label { font-size: 14px; font-weight: 500; }
+  .rule-desc { font-size: 12px; color: #8b8fa8; margin-top: 4px; }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+  .slider-label { font-size: 13px; color: #00d4ff; font-weight: 600; min-width: 60px; }
+  input[type=range] { flex: 1; accent-color: #00d4ff; height: 4px; }
+  .toggle { position: relative; width: 40px; height: 22px; cursor: pointer; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track { position: absolute; inset: 0; background: rgba(255,255,255,0.1); border-radius: 11px; transition: background 0.2s; }
+  .toggle input:checked + .toggle-track { background: #00d4ff; }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; transition: transform 0.2s; }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+  /* Level cards */
+  .level-card { border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid; }
+  .level-card:last-child { margin-bottom: 0; }
+  .lc-bronze { background: rgba(205,127,50,0.08); border-color: rgba(205,127,50,0.2); }
+  .lc-prata { background: rgba(139,143,168,0.08); border-color: rgba(139,143,168,0.2); }
+  .lc-ouro { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); }
+  .lc-diamante { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.2); }
+  .lc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .lc-name { font-weight: 600; font-size: 13px; }
+  .lc-range { font-size: 11px; color: #8b8fa8; }
+  .lc-benefits { font-size: 12px; color: #8b8fa8; }
+
+  /* Save button */
+  .save-row { margin-top: 24px; display: flex; justify-content: flex-end; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #13141f; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; width: 420px; max-width: 95vw; }
+  .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: #8b8fa8; margin-bottom: 22px; }
+  .modal-balance { font-size: 22px; font-weight: 700; color: #00d4ff; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; color: #8b8fa8; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.4px; }
+  .form-input { width: 100%; background: #0e0f1a; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 14px; color: #ffffff; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  .form-input:focus { border-color: rgba(0,212,255,0.4); }
+  select.form-input { cursor: pointer; }
+  select.form-input option { background: #13141f; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .btn-cancel { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; color: #8b8fa8; font-size: 14px; cursor: pointer; }
+  .btn-cancel:hover { color: #ffffff; }
+  .btn-confirm { flex: 1; background: #00d4ff; border: none; border-radius: 10px; padding: 10px; color: #08090f; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-confirm:hover { opacity: 0.88; }
+
+  /* Hidden rows */
+  tr.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="logo">
+      <div class="logo-mark">L</div>
+      <div class="logo-text">LAV<span>AI</span></div>
+    </div>
+    <div class="header-badge">Módulo Fidelidade</div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Clientes cadastrados</div>
+      <div class="stat-value">284</div>
+      <div class="stat-sub">Total na base</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pontos emitidos este mês</div>
+      <div class="stat-value">12.840</div>
+      <div class="stat-sub">maio 2026</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Resgates realizados</div>
+      <div class="stat-value">38</div>
+      <div class="stat-sub">este mês</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Taxa de retorno</div>
+      <div class="stat-value">68%</div>
+      <div class="stat-sub"><span class="stat-up">↑ +12%</span> vs. mês anterior</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-tab="clientes">Clientes</button>
+    <button class="tab-btn" data-tab="resgates">Resgates</button>
+    <button class="tab-btn" data-tab="configurar">Configurar Programa</button>
+  </div>
+
+  <!-- TAB 1: CLIENTES -->
+  <div class="tab-panel active" id="tab-clientes">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nome ou placa...">
+      </div>
+      <button class="btn-primary">+ Cadastrar cliente</button>
+      <button class="btn-ghost">Exportar</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Placa</th>
+            <th>Visitas</th>
+            <th>Pontos</th>
+            <th>Nível</th>
+            <th>Última visita</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="clientesTable">
+          <tr data-name="João Silva" data-plate="ABC-1234">
+            <td class="td-name">João Silva</td>
+            <td><span class="td-plate">ABC-1234</span></td>
+            <td class="td-visits">24 visitas</td>
+            <td class="td-points">1.240 pts</td>
+            <td><span class="badge badge-ouro">Ouro</span></td>
+            <td class="td-date">14/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('João Silva', '1.240 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Maria Costa" data-plate="XYZ-5678">
+            <td class="td-name">Maria Costa</td>
+            <td><span class="td-plate">XYZ-5678</span></td>
+            <td class="td-visits">18 visitas</td>
+            <td class="td-points">890 pts</td>
+            <td><span class="badge badge-prata">Prata</span></td>
+            <td class="td-date">12/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Maria Costa', '890 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Pedro Rocha" data-plate="DEF-9012">
+            <td class="td-name">Pedro Rocha</td>
+            <td><span class="td-plate">DEF-9012</span></td>
+            <td class="td-visits">31 visitas</td>
+            <td class="td-points">1.580 pts</td>
+            <td><span class="badge badge-diamante">Diamante</span></td>
+            <td class="td-date">15/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Pedro Rocha', '1.580 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Ana Lima" data-plate="GHI-3456">
+            <td class="td-name">Ana Lima</td>
+            <td><span class="td-plate">GHI-3456</span></td>
+            <td class="td-visits">12 visitas</td>
+            <td class="td-points">540 pts</td>
+            <td><span class="badge badge-prata">Prata</span></td>
+            <td class="td-date">08/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Ana Lima', '540 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Carlos Mendes" data-plate="JKL-7890">
+            <td class="td-name">Carlos Mendes</td>
+            <td><span class="td-plate">JKL-7890</span></td>
+            <td class="td-visits">7 visitas</td>
+            <td class="td-points">210 pts</td>
+            <td><span class="badge badge-bronze">Bronze</span></td>
+            <td class="td-date">03/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Carlos Mendes', '210 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Fernanda Souza" data-plate="MNO-2345">
+            <td class="td-name">Fernanda Souza</td>
+            <td><span class="td-plate">MNO-2345</span></td>
+            <td class="td-visits">22 visitas</td>
+            <td class="td-points">1.100 pts</td>
+            <td><span class="badge badge-ouro">Ouro</span></td>
+            <td class="td-date">13/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Fernanda Souza', '1.100 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Roberto Santos" data-plate="PQR-6789">
+            <td class="td-name">Roberto Santos</td>
+            <td><span class="td-plate">PQR-6789</span></td>
+            <td class="td-visits">9 visitas</td>
+            <td class="td-points">380 pts</td>
+            <td><span class="badge badge-bronze">Bronze</span></td>
+            <td class="td-date">10/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Roberto Santos', '380 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Juliana Ferreira" data-plate="STU-0123">
+            <td class="td-name">Juliana Ferreira</td>
+            <td><span class="td-plate">STU-0123</span></td>
+            <td class="td-visits">15 visitas</td>
+            <td class="td-points">720 pts</td>
+            <td><span class="badge badge-prata">Prata</span></td>
+            <td class="td-date">11/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Juliana Ferreira', '720 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Marcelo Oliveira" data-plate="VWX-4567">
+            <td class="td-name">Marcelo Oliveira</td>
+            <td><span class="td-plate">VWX-4567</span></td>
+            <td class="td-visits">28 visitas</td>
+            <td class="td-points">1.390 pts</td>
+            <td><span class="badge badge-ouro">Ouro</span></td>
+            <td class="td-date">14/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Marcelo Oliveira', '1.390 pts')">Pontuar</button></div></td>
+          </tr>
+          <tr data-name="Beatriz Alves" data-plate="YZA-8901">
+            <td class="td-name">Beatriz Alves</td>
+            <td><span class="td-plate">YZA-8901</span></td>
+            <td class="td-visits">6 visitas</td>
+            <td class="td-points">180 pts</td>
+            <td><span class="badge badge-bronze">Bronze</span></td>
+            <td class="td-date">01/05/2026</td>
+            <td><div class="actions"><button class="btn-sm btn-ver">Ver</button><button class="btn-sm btn-pontuar" onclick="openModal('Beatriz Alves', '180 pts')">Pontuar</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span>Página 1 de 29 · 284 clientes</span>
+        <div class="pagination-btns">
+          <button class="pag-btn">← Anterior</button>
+          <button class="pag-btn">Próxima →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: RESGATES -->
+  <div class="tab-panel" id="tab-resgates">
+    <div class="toolbar">
+      <div style="font-size:15px; font-weight:600;">Histórico de resgates</div>
+      <button class="btn-ghost" style="margin-left:auto;">Filtrar por período</button>
+    </div>
+    <div class="resgates-list">
+      <div class="resgate-row">
+        <div class="avatar av-cyan">JS</div>
+        <div class="resgate-info">
+          <div class="resgate-name">João Silva</div>
+          <div class="resgate-plate">ABC-1234</div>
+        </div>
+        <div class="resgate-desc">Lavagem Simples Grátis</div>
+        <span class="pts-badge">-500 pts</span>
+        <span class="resgate-date">14/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+      <div class="resgate-row">
+        <div class="avatar av-amber">MC</div>
+        <div class="resgate-info">
+          <div class="resgate-name">Maria Costa</div>
+          <div class="resgate-plate">XYZ-5678</div>
+        </div>
+        <div class="resgate-desc">Desconto de 20%</div>
+        <span class="pts-badge">-300 pts</span>
+        <span class="resgate-date">13/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+      <div class="resgate-row">
+        <div class="avatar av-purple">PR</div>
+        <div class="resgate-info">
+          <div class="resgate-name">Pedro Rocha</div>
+          <div class="resgate-plate">DEF-9012</div>
+        </div>
+        <div class="resgate-desc">Polimento com 50% off</div>
+        <span class="pts-badge">-800 pts</span>
+        <span class="resgate-date">12/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+      <div class="resgate-row">
+        <div class="avatar av-green">FS</div>
+        <div class="resgate-info">
+          <div class="resgate-name">Fernanda Souza</div>
+          <div class="resgate-plate">MNO-2345</div>
+        </div>
+        <div class="resgate-desc">Lavagem Completa Grátis</div>
+        <span class="pts-badge">-700 pts</span>
+        <span class="resgate-date">11/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+      <div class="resgate-row">
+        <div class="avatar av-rose">JF</div>
+        <div class="resgate-info">
+          <div class="resgate-name">Juliana Ferreira</div>
+          <div class="resgate-plate">STU-0123</div>
+        </div>
+        <div class="resgate-desc">Desconto de 15%</div>
+        <span class="pts-badge">-200 pts</span>
+        <span class="resgate-date">11/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+      <div class="resgate-row">
+        <div class="avatar av-cyan">MO</div>
+        <div class="resgate-info">
+          <div class="resgate-name">Marcelo Oliveira</div>
+          <div class="resgate-plate">VWX-4567</div>
+        </div>
+        <div class="resgate-desc">Cera Premium com 40% off</div>
+        <span class="pts-badge">-600 pts</span>
+        <span class="resgate-date">10/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+      <div class="resgate-row">
+        <div class="avatar av-amber">RS</div>
+        <div class="resgate-info">
+          <div class="resgate-name">Roberto Santos</div>
+          <div class="resgate-plate">PQR-6789</div>
+        </div>
+        <div class="resgate-desc">Aspiração Grátis</div>
+        <span class="pts-badge">-150 pts</span>
+        <span class="resgate-date">08/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+      <div class="resgate-row">
+        <div class="avatar av-purple">AL</div>
+        <div class="resgate-info">
+          <div class="resgate-name">Ana Lima</div>
+          <div class="resgate-plate">GHI-3456</div>
+        </div>
+        <div class="resgate-desc">Desconto de 10%</div>
+        <span class="pts-badge">-100 pts</span>
+        <span class="resgate-date">06/05</span>
+        <span class="check-icon">✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: CONFIGURAR -->
+  <div class="tab-panel" id="tab-configurar">
+    <div class="config-grid">
+
+      <!-- Left: Rules -->
+      <div class="config-card">
+        <div class="config-card-title">Regras de pontuação</div>
+
+        <div class="config-rule">
+          <div class="rule-header">
+            <span class="rule-label">Pontos por real gasto</span>
+          </div>
+          <div class="rule-desc">Defina quantos pontos o cliente ganha por cada R$1 gasto</div>
+          <div class="slider-row">
+            <input type="range" min="1" max="5" value="2" step="1" id="ptSlider" oninput="updateSlider(this.value)">
+            <span class="slider-label" id="ptLabel">A cada R$1 = 2 pontos</span>
+          </div>
+        </div>
+
+        <div class="config-rule">
+          <div class="rule-header">
+            <span class="rule-label">Bônus no aniversário</span>
+            <label class="toggle">
+              <input type="checkbox" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+          <div class="rule-desc">5× pontos no dia do aniversário do cliente</div>
+        </div>
+
+        <div class="config-rule">
+          <div class="rule-header">
+            <span class="rule-label">Bônus de indicação</span>
+            <label class="toggle">
+              <input type="checkbox" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+          <div class="rule-desc">200 pontos por cliente indicado que realizar a primeira visita</div>
+        </div>
+      </div>
+
+      <!-- Right: Levels -->
+      <div class="config-card">
+        <div class="config-card-title">Níveis e benefícios</div>
+
+        <div class="level-card lc-bronze">
+          <div class="lc-header">
+            <span class="lc-name" style="color:#cd7f32;">Bronze</span>
+            <span class="lc-range">0 – 499 pts</span>
+          </div>
+          <div class="lc-benefits">Desconto de 5% em todos os serviços</div>
+        </div>
+
+        <div class="level-card lc-prata">
+          <div class="lc-header">
+            <span class="lc-name" style="color:#b0b3c8;">Prata</span>
+            <span class="lc-range">500 – 999 pts</span>
+          </div>
+          <div class="lc-benefits">Desconto de 10% + fila preferencial</div>
+        </div>
+
+        <div class="level-card lc-ouro">
+          <div class="lc-header">
+            <span class="lc-name" style="color:#fbbf24;">Ouro</span>
+            <span class="lc-range">1.000 – 1.999 pts</span>
+          </div>
+          <div class="lc-benefits">Desconto de 15% + fila VIP + brinde mensal</div>
+        </div>
+
+        <div class="level-card lc-diamante">
+          <div class="lc-header">
+            <span class="lc-name" style="color:#00d4ff;">Diamante</span>
+            <span class="lc-range">2.000+ pts</span>
+          </div>
+          <div class="lc-benefits">Desconto de 20% + atendimento prioritário + lavagem grátis por mês</div>
+        </div>
+
+        <div class="save-row">
+          <button class="btn-primary">Salvar configurações</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title">Adicionar pontos</div>
+    <div class="modal-sub" id="modalSub">João Silva — saldo atual</div>
+    <div class="modal-balance" id="modalBalance">1.240 pts</div>
+
+    <div style="margin-top:20px;">
+      <div class="form-group">
+        <label class="form-label">Pontos a adicionar</label>
+        <input type="number" class="form-input" placeholder="ex: 100" min="1" id="ptsInput">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motivo</label>
+        <select class="form-input">
+          <option>Lavagem</option>
+          <option>Aniversário</option>
+          <option>Indicação</option>
+          <option>Ajuste manual</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmPoints()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Search filter
+  document.getElementById('searchInput').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('#clientesTable tr').forEach(row => {
+      const name = (row.dataset.name || '').toLowerCase();
+      const plate = (row.dataset.plate || '').toLowerCase();
+      if (!q || name.includes(q) || plate.includes(q)) {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+  });
+
+  // Slider
+  function updateSlider(v) {
+    document.getElementById('ptLabel').textContent = 'A cada R$1 = ' + v + ' ponto' + (v > 1 ? 's' : '');
+  }
+
+  // Modal
+  function openModal(name, balance) {
+    document.getElementById('modalSub').textContent = name + ' — saldo atual';
+    document.getElementById('modalBalance').textContent = balance;
+    document.getElementById('ptsInput').value = '';
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  function confirmPoints() {
+    const pts = document.getElementById('ptsInput').value;
+    if (!pts || pts <= 0) {
+      document.getElementById('ptsInput').style.borderColor = 'rgba(239,68,68,0.5)';
+      return;
+    }
+    closeModal();
+  }
+</script>
+</body>
+</html>

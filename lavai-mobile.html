@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#08090f"/>
+<title>LAVAI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700;800&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#08090f;--bg2:#0d0f1a;--bg3:#12152a;--bg4:#1a1d2e;
+  --cyan:#00d4ff;--blue:#4f8eff;--green:#00e676;--purple:#a855f7;
+  --yellow:#fbbf24;--red:#f87171;--orange:#fb923c;
+  --text:#f0f4ff;--muted:#6b7280;--border:rgba(255,255,255,0.08);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow:hidden}
+::-webkit-scrollbar{display:none}
+
+/* ── LAYOUT ── */
+#app{height:100dvh;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative}
+.screen{flex:1;overflow-y:auto;display:none;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+.screen.active{display:block}
+
+/* ── STATUS BAR SAFE AREA ── */
+.topbar{
+  padding: env(safe-area-inset-top,0) 16px 0;
+  background:rgba(8,9,15,0.96);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;
+}
+.topbar-logo{display:flex;align-items:center;gap:8px}
+.logo-sq{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.logo-name{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;color:var(--cyan)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;position:relative}
+.notif-badge{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--cyan);border:1.5px solid var(--bg)}
+.live-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.25);font-size:11px;color:var(--green);font-weight:600}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── BOTTOM NAV ── */
+#bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;
+  padding:0 8px env(safe-area-inset-bottom,12px);
+  background:rgba(8,9,15,0.97);
+  backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  z-index:200;
+}
+.nav-inner{display:flex;justify-content:space-around;padding:8px 0 4px}
+.nav-tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 14px;border-radius:14px;cursor:pointer;transition:.2s;min-width:60px}
+.nav-tab.active{background:rgba(0,212,255,0.1)}
+.nav-icon{font-size:20px;line-height:1}
+.nav-label{font-size:10px;font-weight:600;color:var(--muted)}
+.nav-tab.active .nav-label{color:var(--cyan)}
+.nav-tab.active .nav-icon{filter:drop-shadow(0 0 6px var(--cyan))}
+
+/* ── FAB ── */
+.fab{
+  position:fixed;bottom:calc(76px + env(safe-area-inset-bottom,0px));right:16px;
+  width:56px;height:56px;border-radius:18px;
+  background:linear-gradient(135deg,var(--cyan),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;cursor:pointer;z-index:199;
+  box-shadow:0 4px 20px rgba(0,212,255,0.4);
+  transition:.2s;border:none;
+}
+.fab:active{transform:scale(0.93)}
+.fab.hidden{display:none}
+
+/* ── CARDS ── */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:18px;padding:16px;margin:0 16px 12px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:12px}
+
+/* ── SECTION TITLE ── */
+.section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:16px 16px 8px}
+
+/* ── METRICS ROW ── */
+.metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:4px}
+.metric-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative;overflow:hidden}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0}
+.metric-card.cyan::before{background:var(--cyan)}
+.metric-card.green::before{background:var(--green)}
+.metric-card.purple::before{background:var(--purple)}
+.metric-card.yellow::before{background:var(--yellow)}
+.metric-icon{font-size:18px;margin-bottom:6px}
+.metric-value{font-family:'Space Grotesk',sans-serif;font-size:1.45rem;font-weight:700;line-height:1}
+.metric-label{font-size:10px;color:var(--muted);font-weight:500;margin-top:4px}
+.metric-delta{font-size:10px;font-weight:600;margin-top:3px}
+
+/* ── QUEUE ITEMS ── */
+.queue-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.queue-item:last-child{border-bottom:none}
+.q-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0}
+.q-info{flex:1;min-width:0}
+.q-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.q-status{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;font-size:10px;font-weight:700}
+.status-waiting{background:rgba(251,191,36,0.12);color:var(--yellow)}
+.status-in_progress{background:rgba(0,212,255,0.12);color:var(--cyan)}
+.status-done{background:rgba(0,230,118,0.12);color:var(--green)}
+.q-actions{display:flex;gap:6px;flex-shrink:0}
+.q-btn{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:none;background:rgba(255,255,255,0.06);transition:.15s}
+.q-btn:active{transform:scale(0.9)}
+
+/* ── INSIGHT CARDS ── */
+.insight-scroll{display:flex;gap:10px;padding:0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.insight-scroll::-webkit-scrollbar{display:none}
+.insight-card{flex-shrink:0;width:240px;border-radius:16px;padding:14px;border:1px solid var(--border)}
+.insight-icon{font-size:20px;margin-bottom:8px}
+.insight-text{font-size:12.5px;color:var(--text);line-height:1.5}
+.insight-action{font-size:11px;font-weight:600;margin-top:8px;color:var(--cyan)}
+
+/* ── QUICK ACTIONS ── */
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 16px}
+.quick-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:14px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:.15s}
+.quick-btn:active{transform:scale(0.95);background:var(--bg4)}
+.quick-icon{font-size:20px}
+.quick-label{font-size:10px;font-weight:600;color:var(--muted);text-align:center;line-height:1.2}
+
+/* ── FINANCIAL SUMMARY ── */
+.fin-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.fin-row:last-child{border-bottom:none}
+.fin-label{font-size:13px;color:var(--muted)}
+.fin-value{font-size:14px;font-weight:700}
+
+/* ── NOTIFICATION ITEMS ── */
+.notif-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}
+.notif-item:active{background:rgba(255,255,255,0.02)}
+.notif-dot-wrap{flex-shrink:0;padding-top:2px}
+.notif-dot2{width:8px;height:8px;border-radius:50%}
+.notif-body{flex:1}
+.notif-title{font-size:13.5px;font-weight:600;margin-bottom:2px}
+.notif-sub{font-size:12px;color:var(--muted)}
+.notif-time{font-size:10px;color:var(--muted);flex-shrink:0;padding-top:2px}
+.notif-unread .notif-title{color:var(--text)}
+.notif-read .notif-title{color:var(--muted)}
+
+/* ── TEAM ── */
+.employee-card{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.employee-card:last-child{border-bottom:none}
+.emp-avatar{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.emp-info{flex:1}
+.emp-name{font-size:14px;font-weight:600}
+.emp-role{font-size:11px;color:var(--muted);margin-top:2px}
+.emp-stats{text-align:right}
+.emp-cars{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--cyan);line-height:1}
+.emp-rev{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:500;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--bg2);border-radius:24px 24px 0 0;border:1px solid var(--border);border-bottom:none;width:100%;max-width:430px;padding:0 0 env(safe-area-inset-bottom,24px)}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.15);margin:12px auto 20px}
+.modal-title{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;padding:0 20px 16px}
+.modal-body{padding:0 20px 20px}
+.input-group{margin-bottom:14px}
+.input-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;display:block}
+.input-field{width:100%;padding:13px 14px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);font-size:15px;outline:none;font-family:'Inter',sans-serif}
+.input-field:focus{border-color:rgba(0,212,255,0.4)}
+.btn-full{width:100%;padding:15px;border-radius:14px;background:linear-gradient(135deg,var(--cyan),var(--blue));color:#000;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s}
+.btn-full:active{transform:scale(0.98);opacity:0.9}
+.btn-ghost{width:100%;padding:14px;border-radius:14px;background:rgba(255,255,255,0.05);color:var(--muted);font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:'Inter',sans-serif;margin-top:8px}
+
+/* ── SWIPE HINT ── */
+.swipe-hint{font-size:10px;color:var(--muted);text-align:center;padding:6px 0 0}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:var(--text);z-index:999;opacity:0;transition:.3s;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── TOP BAR ── -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-logo">
+        <div class="logo-sq">⚡</div>
+        <span class="logo-name">LAVAI</span>
+      </div>
+      <div class="topbar-right">
+        <div class="live-chip"><span class="live-dot"></span>Aberto</div>
+        <div class="icon-btn" onclick="switchScreen('notificacoes')">🔔<span class="notif-badge" id="notif-badge"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+       SCREEN: HOME
+  ════════════════════════════════════════════════ -->
+  <div class="screen active" id="screen-home">
+
+    <!-- Greeting -->
+    <div style="padding:16px 16px 8px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;color:var(--muted)">Sábado, 16 de maio</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;margin-top:2px">Bom dia, Marcos! 👋</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--muted)">Caixa aberto</div>
+        <div id="home-clock" style="font-size:1.1rem;font-weight:700;color:var(--cyan);font-family:monospace">--:--</div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-row">
+      <div class="metric-card cyan">
+        <div class="metric-icon">🚗</div>
+        <div class="metric-value" id="m-carros">23</div>
+        <div class="metric-label">Carros hoje</div>
+        <div class="metric-delta" style="color:var(--green)">↑ +4 vs ontem</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-icon">💵</div>
+        <div class="metric-value" id="m-receita">R$1.840</div>
+        <div class="metric-label">Receita hoje</div>
+        <div class="metric-delta" style="color:var(--green)">↑ +12% vs ontem</div>
+      </div>
+    </div>
+    <div class="metrics-row" style="margin-bottom:12px">
+      <div class="metric-card purple">
+        <div class="metric-icon">⏳</div>
+        <div class="metric-value" id="m-fila">5</div>
+        <div class="metric-label">Na fila agora</div>
+        <div class="metric-delta" style="color:var(--muted)">2 em andamento</div>
+      </div>
+      <div class="metric-card yellow">
+        <div class="metric-icon">🎫</div>
+        <div class="metric-value">R$80</div>
+        <div class="metric-label">Ticket médio</div>
+        <div class="metric-delta" style="color:var(--green)">↑ +R$5</div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="section-title">Ações Rápidas</div>
+    <div class="quick-actions" style="margin-bottom:16px">
+      <div class="quick-btn" onclick="openAddModal()">
+        <span class="quick-icon">➕</span>
+        <span class="quick-label">Add Fila</span>
+      </div>
+      <div class="quick-btn" onclick="switchScreen('caixa')">
+        <span class="quick-icon">💰</span>
+        <span class="quick-label">Caixa</span>
+      </div>
+      <div class="quick-btn" onclick="showToast('WhatsApp Bot ativo ✓')">
+        <span class="quick-icon">💬</span>
+        <span class="quick-label">WhatsApp</span>
+      </div>
+      <div class="quick-btn" onclick="switchScreen('equipe')">
+        <span class="quick-icon">👥</span>
+        <span class="quick-label">Equipe</span>
+      </div>
+    </div>
+
+    <!-- Live queue preview -->
+    <div class="section-title">Fila ao Vivo</div>
+    <div class="card" style="padding:16px">
+      <div id="home-queue"></div>
+      <button onclick="switchScreen('fila')" style="width:100%;padding:10px;border-radius:11px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;margin-top:8px">
+        Ver fila completa →
+      </button>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="section-title">IA Insights</div>
+    <div class="insight-scroll" style="margin-bottom:20px">
+      <div class="insight-card" style="background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2)">
+        <div class="insight-icon">🔮</div>
+        <div class="insight-text">Pico previsto às <strong style="color:var(--cyan)">16h30</strong>. Histórico de sextas indica +8 carros neste horário.</div>
+        <div class="insight-action">Chamar funcionário extra →</div>
+      </div>
+      <div class="insight-card" style="background:rgba(168,85,247,0.06);border-color:rgba(168,85,247,0.2)">
+        <div class="insight-icon">👤</div>
+        <div class="insight-text"><strong style="color:var(--purple)">Fernanda Costa</strong> não vem há 5 dias. Ela costuma vir toda semana.</div>
+        <div class="insight-action" style="color:var(--purple)">Enviar WhatsApp →</div>
+      </div>
+      <div class="insight-card" style="background:rgba(0,230,118,0.06);border-color:rgba(0,230,118,0.2)">
+        <div class="insight-icon">📊</div>
+        <div class="insight-text"><strong style="color:var(--green)">Polimento</strong> dá 2× mais lucro por hora. Promover nas próximas mensagens.</div>
+        <div class="insight-action" style="color:var(--green)">Ver análise →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+       SCREEN: FILA
+  ════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-fila">
+    <div class="section-title" style="padding-top:12px">Fila ao Vivo · <span id="fila-count">8 carros</span></div>
+    <div class="card" style="padding:16px">
+      <div id="fila-list"></div>
+    </div>
+    <div class="swipe-hint">Toque no status para avançar</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+       SCREEN: CAIXA
+  ════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-caixa">
+    <div class="section-title" style="padding-top:12px">Caixa do Dia</div>
+
+    <!-- Summary card -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Lucro Líquido</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:800;color:var(--green);margin-top:2px">R$1.040</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--muted)">Margem</div>
+          <div style="font-size:1.4rem;font-weight:700;color:var(--green)">57%</div>
+        </div>
+      </div>
+      <div class="fin-row">
+        <span class="fin-label">💵 Receita bruta</span>
+        <span class="fin-value" style="color:var(--cyan)">R$1.840</span>
+      </div>
+      <div class="fin-row">
+        <span class="fin-label">📉 Despesas</span>
+        <span class="fin-value" style="color:var(--red)">-R$800</span>
+      </div>
+      <div class="fin-row">
+        <span class="fin-label">🎫 Ticket médio</span>
+        <span class="fin-value">R$80</span>
+      </div>
+      <div class="fin-row">
+        <span class="fin-label">🚗 Carros lavados</span>
+        <span class="fin-value">23</span>
+      </div>
+    </div>
+
+    <!-- Payment methods -->
+    <div class="section-title">Formas de Pagamento</div>
+    <div class="card">
+      <div id="payments-list">
+        <div class="fin-row">
+          <span class="fin-label">📱 Pix</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:80px;height:5px;border-radius:3px;background:rgba(255,255,255,0.06)"><div style="width:48%;height:100%;border-radius:3px;background:var(--cyan)"></div></div>
+            <span class="fin-value" style="color:var(--cyan)">R$885</span>
+          </div>
+        </div>
+        <div class="fin-row">
+          <span class="fin-label">💳 Cartão</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:80px;height:5px;border-radius:3px;background:rgba(255,255,255,0.06)"><div style="width:35%;height:100%;border-radius:3px;background:var(--purple)"></div></div>
+            <span class="fin-value" style="color:var(--purple)">R$644</span>
+          </div>
+        </div>
+        <div class="fin-row">
+          <span class="fin-label">💵 Dinheiro</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:80px;height:5px;border-radius:3px;background:rgba(255,255,255,0.06)"><div style="width:17%;height:100%;border-radius:3px;background:var(--green)"></div></div>
+            <span class="fin-value" style="color:var(--green)">R$311</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="padding:0 16px;display:flex;gap:10px;margin-bottom:12px">
+      <button onclick="showToast('📊 Exportando relatório...')" style="flex:1;padding:13px;border-radius:13px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">
+        📊 Exportar
+      </button>
+      <button onclick="closeCaixa()" style="flex:1;padding:13px;border-radius:13px;background:linear-gradient(135deg,var(--green),var(--cyan));color:#000;font-size:13px;font-weight:700;border:none;cursor:pointer">
+        ✓ Fechar Caixa
+      </button>
+    </div>
+
+    <!-- Last 7 days -->
+    <div class="section-title">Histórico</div>
+    <div class="card" style="padding:12px 16px">
+      <div id="history-list">
+        <div class="fin-row"><span class="fin-label">Qui, 15 mai — 23 carros</span><span class="fin-value" style="color:var(--green)">R$1.060</span></div>
+        <div class="fin-row"><span class="fin-label">Qua, 14 mai — 28 carros</span><span class="fin-value" style="color:var(--green)">R$1.370</span></div>
+        <div class="fin-row"><span class="fin-label">Ter, 13 mai — 19 carros</span><span class="fin-value" style="color:var(--green)">R$800</span></div>
+        <div class="fin-row"><span class="fin-label">Sex, 11 mai — 39 carros</span><span class="fin-value" style="color:var(--green)">R$2.170</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+       SCREEN: EQUIPE
+  ════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-equipe">
+    <div class="section-title" style="padding-top:12px">Equipe · Hoje</div>
+    <div class="card">
+      <div id="team-list">
+        <div class="employee-card">
+          <div class="emp-avatar" style="background:rgba(0,212,255,0.15);color:var(--cyan)">CA</div>
+          <div class="emp-info">
+            <div class="emp-name">Carlos</div>
+            <div class="emp-role">Lavador Sênior · Turno integral</div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <span style="background:rgba(0,212,255,0.1);color:var(--cyan);font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">Ativo agora</span>
+            </div>
+          </div>
+          <div class="emp-stats">
+            <div class="emp-cars">9</div>
+            <div class="emp-rev">R$720</div>
+          </div>
+        </div>
+        <div class="employee-card">
+          <div class="emp-avatar" style="background:rgba(0,230,118,0.15);color:var(--green)">AN</div>
+          <div class="emp-info">
+            <div class="emp-name">Ana</div>
+            <div class="emp-role">Lavadora · Meio período</div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <span style="background:rgba(0,230,118,0.1);color:var(--green);font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">Ativo agora</span>
+            </div>
+          </div>
+          <div class="emp-stats">
+            <div class="emp-cars">7</div>
+            <div class="emp-rev">R$560</div>
+          </div>
+        </div>
+        <div class="employee-card">
+          <div class="emp-avatar" style="background:rgba(168,85,247,0.15);color:var(--purple)">PE</div>
+          <div class="emp-info">
+            <div class="emp-name">Pedro</div>
+            <div class="emp-role">Polidor · Especialista</div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <span style="background:rgba(251,191,36,0.1);color:var(--yellow);font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">Intervalo</span>
+            </div>
+          </div>
+          <div class="emp-stats">
+            <div class="emp-cars">7</div>
+            <div class="emp-rev">R$560</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance -->
+    <div class="section-title">Performance Semanal</div>
+    <div class="card" style="padding:14px 16px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+            <span style="font-weight:600">Carlos <span style="color:var(--muted)">· 42 carros</span></span>
+            <span style="color:var(--cyan);font-weight:700">R$3.360</span>
+          </div>
+          <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.06)"><div style="width:84%;height:100%;border-radius:3px;background:var(--cyan)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+            <span style="font-weight:600">Pedro <span style="color:var(--muted)">· 38 carros</span></span>
+            <span style="color:var(--purple);font-weight:700">R$3.040</span>
+          </div>
+          <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.06)"><div style="width:76%;height:100%;border-radius:3px;background:var(--purple)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+            <span style="font-weight:600">Ana <span style="color:var(--muted)">· 31 carros</span></span>
+            <span style="color:var(--green);font-weight:700">R$2.480</span>
+          </div>
+          <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.06)"><div style="width:62%;height:100%;border-radius:3px;background:var(--green)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+       SCREEN: NOTIFICAÇÕES
+  ════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-notificacoes">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px">
+      <div class="section-title" style="padding:0">Notificações</div>
+      <button onclick="clearNotifs()" style="font-size:11px;font-weight:600;color:var(--cyan);background:none;border:none;cursor:pointer">Marcar lidas</button>
+    </div>
+    <div id="notif-list">
+      <div class="notif-item notif-unread" onclick="showToast('WhatsApp enviado ✓')">
+        <div class="notif-dot-wrap"><div class="notif-dot2" style="background:var(--cyan)"></div></div>
+        <div class="notif-body">
+          <div class="notif-title">💬 Novo agendamento</div>
+          <div class="notif-sub">Rafael Souza — Cristalização às 14h30</div>
+        </div>
+        <div class="notif-time">16:02</div>
+      </div>
+      <div class="notif-item notif-unread">
+        <div class="notif-dot-wrap"><div class="notif-dot2" style="background:var(--green)"></div></div>
+        <div class="notif-body">
+          <div class="notif-title">✅ Pagamento recebido</div>
+          <div class="notif-sub">João Carlos · Pix R$80 · Lavagem Completa</div>
+        </div>
+        <div class="notif-time">15:48</div>
+      </div>
+      <div class="notif-item notif-unread">
+        <div class="notif-dot-wrap"><div class="notif-dot2" style="background:var(--yellow)"></div></div>
+        <div class="notif-body">
+          <div class="notif-title">⚠️ Fila com 5+ carros</div>
+          <div class="notif-sub">Considere chamar um funcionário extra</div>
+        </div>
+        <div class="notif-time">15:30</div>
+      </div>
+      <div class="notif-item notif-read">
+        <div class="notif-dot-wrap"><div class="notif-dot2" style="background:var(--border)"></div></div>
+        <div class="notif-body">
+          <div class="notif-title">🤖 IA: Cliente em risco</div>
+          <div class="notif-sub">Fernanda Costa — 5 dias sem aparecer</div>
+        </div>
+        <div class="notif-time">13:15</div>
+      </div>
+      <div class="notif-item notif-read">
+        <div class="notif-dot-wrap"><div class="notif-dot2" style="background:var(--border)"></div></div>
+        <div class="notif-body">
+          <div class="notif-title">✅ Pagamento recebido</div>
+          <div class="notif-sub">Lúcia Pinto · Pix R$120 · Higienização</div>
+        </div>
+        <div class="notif-time">10:05</div>
+      </div>
+      <div class="notif-item notif-read">
+        <div class="notif-dot-wrap"><div class="notif-dot2" style="background:var(--border)"></div></div>
+        <div class="notif-body">
+          <div class="notif-title">📊 Relatório gerado</div>
+          <div class="notif-sub">Resumo de quinta-feira pronto para ver</div>
+        </div>
+        <div class="notif-time">09:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM NAV ── -->
+  <div id="bottom-nav">
+    <div class="nav-inner">
+      <div class="nav-tab active" id="tab-home" onclick="switchScreen('home')">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Início</span>
+      </div>
+      <div class="nav-tab" id="tab-fila" onclick="switchScreen('fila')">
+        <span class="nav-icon">🚗</span>
+        <span class="nav-label">Fila</span>
+      </div>
+      <div class="nav-tab" id="tab-caixa" onclick="switchScreen('caixa')">
+        <span class="nav-icon">💰</span>
+        <span class="nav-label">Caixa</span>
+      </div>
+      <div class="nav-tab" id="tab-equipe" onclick="switchScreen('equipe')">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Equipe</span>
+      </div>
+      <div class="nav-tab" id="tab-notificacoes" onclick="switchScreen('notificacoes')">
+        <span class="nav-icon">🔔</span>
+        <span class="nav-label">Avisos</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openAddModal()" title="Adicionar à fila">+</button>
+
+</div><!-- /app -->
+
+<!-- ADD TO QUEUE MODAL -->
+<div class="modal-overlay" id="add-modal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Adicionar à Fila</div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label class="input-label">Nome do cliente</label>
+        <input class="input-field" type="text" placeholder="Ex: João Silva" id="add-name"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Placa</label>
+        <input class="input-field" type="text" placeholder="ABC-1234" id="add-plate" style="text-transform:uppercase"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">WhatsApp</label>
+        <input class="input-field" type="tel" placeholder="(11) 99999-9999" id="add-phone"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Serviço</label>
+        <select class="input-field" id="add-service">
+          <option value="40">Lavagem Simples — R$40</option>
+          <option value="80">Lavagem Completa — R$80</option>
+          <option value="110">Lavagem + Cera — R$110</option>
+          <option value="120">Higienização Interna — R$120</option>
+          <option value="180">Polimento — R$180</option>
+          <option value="250">Cristalização — R$250</option>
+        </select>
+      </div>
+      <button class="btn-full" onclick="addToQueue()">Confirmar e Adicionar</button>
+      <button class="btn-ghost" onclick="document.getElementById('add-modal').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────
+const STATUS_CYCLE = ['waiting','in_progress','done'];
+const STATUS_LABEL = { waiting:'Aguardando', in_progress:'Em andamento', done:'Pronto' };
+const STATUS_CLASS = { waiting:'status-waiting', in_progress:'status-in_progress', done:'status-done' };
+const STATUS_EMOJI = { waiting:'⏳', in_progress:'🔵', done:'✅' };
+const AVATAR_COLORS = [
+  ['rgba(0,212,255,.15)','#00d4ff'],['rgba(0,230,118,.15)','#00e676'],
+  ['rgba(168,85,247,.15)','#a855f7'],['rgba(79,142,255,.15)','#4f8eff'],
+  ['rgba(251,191,36,.15)','#fbbf24'],['rgba(248,113,113,.15)','#f87171'],
+];
+
+let queue = [
+  { id:1, name:'João Carlos Silva',   plate:'ABC-1234', service:'Lavagem Completa',     price:80,  status:'done',        time:'07:42', employee:'Carlos' },
+  { id:2, name:'Renata Silva',         plate:'XYZ-5678', service:'Lavagem Simples',       price:40,  status:'done',        time:'08:15', employee:'Ana'    },
+  { id:3, name:'Marcos Pereira',       plate:'DEF-9012', service:'Polimento',             price:180, status:'done',        time:'09:30', employee:'Pedro'  },
+  { id:4, name:'Lúcia Pinto',          plate:'GHI-3456', service:'Higienização Interna',  price:120, status:'in_progress', time:'10:05', employee:'Carlos' },
+  { id:5, name:'Bruno Lima',           plate:'JKL-7890', service:'Lavagem + Cera',        price:110, status:'in_progress', time:'10:50', employee:'Ana'    },
+  { id:6, name:'Fernanda Costa',       plate:'MNO-1234', service:'Lavagem Completa',      price:80,  status:'waiting',     time:'11:20', employee:'Pedro'  },
+  { id:7, name:'Rafael Souza',         plate:'PQR-5678', service:'Cristalização',         price:250, status:'waiting',     time:'12:10', employee:''       },
+  { id:8, name:'Amanda Rodrigues',     plate:'STU-9012', service:'Lavagem Simples',       price:40,  status:'waiting',     time:'13:05', employee:''       },
+];
+
+// ── NAVIGATION ───────────────────────────────────────────────
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const tab = document.getElementById('tab-' + id);
+  if (tab) tab.classList.add('active');
+  if (id === 'fila') renderFila();
+  if (id === 'home') renderHomeQueue();
+  if (id === 'notificacoes') clearBadge();
+  // Show FAB only on home and fila screens
+  const fab = document.querySelector('.fab');
+  if (fab) {
+    if (id === 'home' || id === 'fila') {
+      fab.classList.remove('hidden');
+    } else {
+      fab.classList.add('hidden');
+    }
+  }
+}
+
+// ── QUEUE RENDER ─────────────────────────────────────────────
+function initials(name) {
+  return name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+}
+
+function renderHomeQueue() {
+  const el = document.getElementById('home-queue');
+  const active = queue.filter(q => q.status !== 'done').slice(0,4);
+  el.innerHTML = active.map((q,i) => {
+    const [bg,fg] = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    return `
+      <div class="queue-item">
+        <div class="q-avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
+        <div class="q-info">
+          <div class="q-name">${q.name}</div>
+          <div class="q-sub">${q.plate} · ${q.service}</div>
+        </div>
+        <span class="q-status ${STATUS_CLASS[q.status]}">${STATUS_EMOJI[q.status]} ${STATUS_LABEL[q.status]}</span>
+      </div>`;
+  }).join('') || '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">Fila vazia 🎉</div>';
+}
+
+function renderFila() {
+  const el = document.getElementById('fila-list');
+  document.getElementById('fila-count').textContent = queue.length + ' carros';
+  el.innerHTML = queue.map((q,i) => {
+    const [bg,fg] = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    return `
+      <div class="queue-item">
+        <div class="q-avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
+        <div class="q-info">
+          <div class="q-name">${q.name}</div>
+          <div class="q-sub">${q.plate} · R$${q.price} · ${q.time}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${q.service}</div>
+        </div>
+        <div class="q-actions">
+          <div class="q-btn" onclick="advanceStatus(${q.id})" title="Avançar status">
+            ${STATUS_EMOJI[q.status]}
+          </div>
+          <div class="q-btn" onclick="showToast('WhatsApp enviado ✓')" title="WhatsApp">💬</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function advanceStatus(id) {
+  const item = queue.find(q => q.id === id);
+  if (!item) return;
+  const idx = STATUS_CYCLE.indexOf(item.status);
+  if (idx < STATUS_CYCLE.length - 1) {
+    item.status = STATUS_CYCLE[idx + 1];
+    const msg = item.status === 'done' ? `✅ ${item.name} — Pronto!` : `🔵 ${item.name} — Em andamento`;
+    showToast(msg);
+    renderFila();
+    renderHomeQueue();
+    updateMetrics();
+  }
+}
+
+function updateMetrics() {
+  const active = queue.filter(q => q.status !== 'done');
+  document.getElementById('m-fila').textContent = active.length;
+}
+
+// ── ADD TO QUEUE ─────────────────────────────────────────────
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+function closeModal(e) { if (e.target.id === 'add-modal') document.getElementById('add-modal').classList.remove('open'); }
+
+function addToQueue() {
+  const name    = document.getElementById('add-name').value.trim();
+  const plate   = document.getElementById('add-plate').value.trim().toUpperCase();
+  const service = document.getElementById('add-service');
+  const price   = parseInt(service.value);
+  const svcName = service.options[service.selectedIndex].text.split(' — ')[0];
+  if (!name || !plate) { showToast('⚠️ Preencha nome e placa'); return; }
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  queue.push({ id: Date.now(), name, plate, service: svcName, price, status:'waiting', time, employee:'' });
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-plate').value = '';
+  document.getElementById('add-phone').value = '';
+  document.getElementById('add-modal').classList.remove('open');
+  showToast(`✅ ${name} adicionado à fila`);
+  renderFila(); renderHomeQueue(); updateMetrics();
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────
+function clearBadge() {
+  document.getElementById('notif-badge').style.display = 'none';
+  document.querySelectorAll('.notif-item').forEach(el => {
+    el.classList.remove('notif-unread');
+    el.classList.add('notif-read');
+    el.querySelector('.notif-dot2').style.background = 'var(--border)';
+  });
+}
+function clearNotifs() {
+  clearBadge();
+  showToast('Todas as notificações lidas ✓');
+}
+
+// ── CAIXA ─────────────────────────────────────────────────────
+function closeCaixa() {
+  showToast('✅ Caixa fechado · Relatório gerado');
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  const s = now.getSeconds().toString().padStart(2,'0');
+  const el = document.getElementById('home-clock');
+  if (el) el.textContent = h + ':' + m + ':' + s;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── LIVE METRICS SIMULATION ───────────────────────────────────
+let carCount = 23, revenue = 1840;
+setInterval(() => {
+  if (Math.random() > 0.85) {
+    carCount++;
+    revenue += [40,80,110,120,180][Math.floor(Math.random()*5)];
+    document.getElementById('m-carros').textContent = carCount;
+    document.getElementById('m-receita').textContent = 'R$' + revenue.toLocaleString('pt-BR');
+  }
+}, 8000);
+
+// ── INIT ─────────────────────────────────────────────────────
+renderHomeQueue();
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAVAI — Configuração Inicial</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #08090f;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .logo {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 2rem;
+    color: #fff;
+  }
+  .logo span { color: #00d4ff; }
+
+  .wizard {
+    width: 100%;
+    max-width: 580px;
+  }
+
+  .progress-bar-wrap {
+    margin-bottom: 1.5rem;
+  }
+
+  .step-label {
+    font-size: 13px;
+    color: #8b8fa8;
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+  }
+
+  .steps-track {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .step-dot {
+    flex: 1;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.35s;
+  }
+  .step-dot.completed { background: #00e676; }
+  .step-dot.current { background: #00d4ff; }
+
+  .card {
+    background: #0e0f1a;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .step-panel {
+    display: none;
+    animation: fadeSlideIn 0.35s ease forwards;
+  }
+  .step-panel.active { display: block; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeSlideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-24px); }
+  }
+
+  .step-emoji {
+    font-size: 48px;
+    margin-bottom: 1rem;
+    display: block;
+    line-height: 1;
+  }
+
+  .step-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: #fff;
+  }
+
+  .step-subtitle {
+    font-size: 15px;
+    color: #8b8fa8;
+    margin-bottom: 1.75rem;
+    line-height: 1.5;
+  }
+
+  .form-group {
+    margin-bottom: 1.1rem;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    color: #8b8fa8;
+    margin-bottom: 6px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  input[type="text"],
+  input[type="tel"],
+  input[type="time"],
+  input[type="number"],
+  select {
+    width: 100%;
+    background: #13141f;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="text"]::placeholder,
+  input[type="tel"]::placeholder { color: #8b8fa8; }
+
+  input[type="text"]:focus,
+  input[type="tel"]:focus,
+  input[type="time"]:focus,
+  input[type="number"]:focus,
+  select:focus {
+    border-color: #00d4ff;
+  }
+
+  select { cursor: pointer; }
+
+  .helper-text {
+    font-size: 12px;
+    color: #8b8fa8;
+    margin-top: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .helper-text::before {
+    content: 'ℹ';
+    font-size: 13px;
+    color: #00d4ff;
+    flex-shrink: 0;
+  }
+
+  /* Services grid */
+  .services-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 0.5rem;
+  }
+
+  .service-card {
+    background: #13141f;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    user-select: none;
+  }
+
+  .service-card.selected {
+    border-color: #00d4ff;
+    background: rgba(0,212,255,0.05);
+  }
+
+  .service-card .svc-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.2s;
+  }
+
+  .service-card.selected .svc-check {
+    background: #00d4ff;
+    border-color: #00d4ff;
+    color: #08090f;
+    font-weight: 700;
+  }
+
+  .svc-emoji { font-size: 22px; margin-bottom: 6px; display: block; }
+  .svc-name { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+  .svc-price-row { display: flex; align-items: center; gap: 4px; margin-top: 8px; }
+  .svc-price-prefix { font-size: 12px; color: #8b8fa8; }
+
+  .svc-price-input {
+    width: 70px !important;
+    padding: 5px 8px !important;
+    font-size: 13px !important;
+    border-radius: 7px !important;
+    display: none;
+  }
+
+  .service-card.selected .svc-price-input { display: block; }
+
+  .svc-default-price {
+    font-size: 13px;
+    color: #8b8fa8;
+  }
+
+  .service-card.selected .svc-default-price { display: none; }
+
+  /* Team */
+  .employee-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+
+  .employee-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: #13141f;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .employee-row input[type="text"] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 4px 0;
+    font-size: 15px;
+  }
+
+  .employee-row input[type="text"]:focus { border-color: transparent; }
+
+  .employee-row select {
+    width: auto;
+    flex-shrink: 0;
+    border: none;
+    background: rgba(255,255,255,0.05);
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 7px;
+    color: #8b8fa8;
+  }
+
+  .employee-row select:focus { border-color: transparent; }
+
+  .btn-remove-emp {
+    background: none;
+    border: none;
+    color: #8b8fa8;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+  .btn-remove-emp:hover { color: #ff5252; }
+
+  .btn-add-emp {
+    background: none;
+    border: none;
+    color: #00d4ff;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    transition: opacity 0.15s;
+  }
+  .btn-add-emp:hover { opacity: 0.75; }
+
+  .btn-skip {
+    background: none;
+    border: none;
+    color: #8b8fa8;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 1rem;
+    display: block;
+    transition: color 0.15s;
+  }
+  .btn-skip:hover { color: #fff; }
+
+  /* Hours */
+  .days-grid {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .day-pill {
+    padding: 7px 13px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    background: #13141f;
+    color: #8b8fa8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+  }
+
+  .day-pill.active {
+    border-color: #00d4ff;
+    color: #00d4ff;
+    background: rgba(0,212,255,0.08);
+  }
+
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .time-row label {
+    margin: 0;
+    font-size: 14px;
+    color: #8b8fa8;
+    min-width: 50px;
+  }
+
+  .time-row input[type="time"] {
+    width: auto;
+    min-width: 120px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .toggle-label {
+    font-size: 14px;
+    color: #8b8fa8;
+    flex: 1;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+  }
+
+  .toggle-switch input:checked + .toggle-track { background: #00d4ff; }
+  .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+
+  .lunch-times {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #13141f;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .lunch-times.visible { display: flex; }
+  .lunch-times label { margin: 0; font-size: 13px; white-space: nowrap; }
+  .lunch-times input[type="time"] { min-width: 100px; }
+
+  /* Step 5 */
+  .success-check {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(0,230,118,0.12);
+    border: 2.5px solid #00e676;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 1.5rem;
+    animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    color: #00e676;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .summary-card {
+    background: #13141f;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 1.25rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .summary-item {}
+  .summary-item-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8b8fa8;
+    margin-bottom: 4px;
+  }
+  .summary-item-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 1.75rem;
+  }
+
+  .quick-action-btn {
+    background: #13141f;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: #fff;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: inherit;
+  }
+
+  .quick-action-btn:hover {
+    border-color: rgba(0,212,255,0.4);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .quick-action-arrow { color: #00d4ff; font-size: 16px; }
+
+  /* Navigation */
+  .nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2rem;
+    gap: 12px;
+  }
+
+  .btn-back {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 13px 22px;
+    color: #8b8fa8;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    min-width: 100px;
+  }
+
+  .btn-back:hover {
+    border-color: rgba(255,255,255,0.25);
+    color: #fff;
+  }
+
+  .btn-back:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .btn-next {
+    flex: 1;
+    background: #00d4ff;
+    border: none;
+    border-radius: 14px;
+    padding: 13px 24px;
+    color: #08090f;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    font-family: inherit;
+  }
+
+  .btn-next:hover { opacity: 0.88; }
+  .btn-next:active { transform: scale(0.98); }
+
+  .btn-cta {
+    width: 100%;
+    background: #00e676;
+    border: none;
+    border-radius: 14px;
+    padding: 15px 24px;
+    color: #08090f;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    font-family: inherit;
+    margin-top: 0.25rem;
+  }
+
+  .btn-cta:hover { opacity: 0.88; }
+  .btn-cta:active { transform: scale(0.98); }
+
+  .step5-center { text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="logo">LAV<span>AI</span></div>
+
+<div class="wizard">
+  <div class="progress-bar-wrap">
+    <div class="step-label" id="stepLabel">Passo 1 de 5 — Bem-vindo</div>
+    <div class="steps-track">
+      <div class="step-dot current" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
+      <div class="step-dot" id="dot5"></div>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <!-- STEP 1 -->
+    <div class="step-panel active" id="step1">
+      <span class="step-emoji">👋</span>
+      <div class="step-title">Vamos configurar seu lava-jato</div>
+      <div class="step-subtitle">Leva menos de 3 minutos. Promessa.</div>
+
+      <div class="form-group">
+        <label>Nome do negócio</label>
+        <input type="text" id="bizName" placeholder="Ex: Lava Jato do João" />
+      </div>
+      <div class="form-group">
+        <label>Cidade</label>
+        <input type="text" id="city" placeholder="Ex: São Paulo, SP" />
+      </div>
+      <div class="form-group">
+        <label>WhatsApp do responsável</label>
+        <input type="tel" id="whatsapp" placeholder="(11) 99999-9999" />
+      </div>
+      <div class="helper-text">Você pode alterar tudo isso depois nas configurações</div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-panel" id="step2">
+      <div class="step-title">Quais serviços você oferece?</div>
+      <div class="step-subtitle">Selecione e defina o preço de cada um</div>
+
+      <div class="services-grid">
+        <div class="service-card selected" data-id="s1" onclick="toggleService(this)">
+          <div class="svc-check">✓</div>
+          <span class="svc-emoji">🚿</span>
+          <div class="svc-name">Lavagem Simples</div>
+          <div class="svc-price-row">
+            <span class="svc-price-prefix">R$</span>
+            <input class="svc-price-input" type="number" value="35" min="0" onclick="event.stopPropagation()" />
+            <span class="svc-default-price">35</span>
+          </div>
+        </div>
+
+        <div class="service-card selected" data-id="s2" onclick="toggleService(this)">
+          <div class="svc-check">✓</div>
+          <span class="svc-emoji">🚗</span>
+          <div class="svc-name">Lavagem Completa</div>
+          <div class="svc-price-row">
+            <span class="svc-price-prefix">R$</span>
+            <input class="svc-price-input" type="number" value="65" min="0" onclick="event.stopPropagation()" />
+            <span class="svc-default-price">65</span>
+          </div>
+        </div>
+
+        <div class="service-card" data-id="s3" onclick="toggleService(this)">
+          <div class="svc-check"></div>
+          <span class="svc-emoji">✨</span>
+          <div class="svc-name">Polimento</div>
+          <div class="svc-price-row">
+            <span class="svc-price-prefix">R$</span>
+            <input class="svc-price-input" type="number" value="120" min="0" onclick="event.stopPropagation()" />
+            <span class="svc-default-price">120</span>
+          </div>
+        </div>
+
+        <div class="service-card" data-id="s4" onclick="toggleService(this)">
+          <div class="svc-check"></div>
+          <span class="svc-emoji">🧴</span>
+          <div class="svc-name">Higienização</div>
+          <div class="svc-price-row">
+            <span class="svc-price-prefix">R$</span>
+            <input class="svc-price-input" type="number" value="150" min="0" onclick="event.stopPropagation()" />
+            <span class="svc-default-price">150</span>
+          </div>
+        </div>
+
+        <div class="service-card" data-id="s5" onclick="toggleService(this)">
+          <div class="svc-check"></div>
+          <span class="svc-emoji">🔦</span>
+          <div class="svc-name">Vitrificação</div>
+          <div class="svc-price-row">
+            <span class="svc-price-prefix">R$</span>
+            <input class="svc-price-input" type="number" value="350" min="0" onclick="event.stopPropagation()" />
+            <span class="svc-default-price">350</span>
+          </div>
+        </div>
+
+        <div class="service-card" data-id="s6" onclick="toggleService(this)">
+          <div class="svc-check"></div>
+          <span class="svc-emoji">🪣</span>
+          <div class="svc-name">Cristalização</div>
+          <div class="svc-price-row">
+            <span class="svc-price-prefix">R$</span>
+            <input class="svc-price-input" type="number" value="280" min="0" onclick="event.stopPropagation()" />
+            <span class="svc-default-price">280</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-panel" id="step3">
+      <div class="step-title">Quem trabalha com você?</div>
+      <div class="step-subtitle">Adicione os funcionários para acompanhar o desempenho</div>
+
+      <div class="employee-list" id="employeeList">
+        <div class="employee-row">
+          <input type="text" placeholder="Nome do funcionário" value="Carlos" />
+          <select>
+            <option>Lavador</option>
+            <option>Polidor</option>
+            <option>Gerente</option>
+            <option>Caixa</option>
+          </select>
+          <button class="btn-remove-emp" onclick="removeEmployee(this)" title="Remover">×</button>
+        </div>
+      </div>
+
+      <button class="btn-add-emp" onclick="addEmployee()">
+        <span style="font-size:18px;line-height:1">+</span> Adicionar funcionário
+      </button>
+
+      <button class="btn-skip" onclick="skipTeam()">Sou só eu por enquanto →</button>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-panel" id="step4">
+      <div class="step-title">Qual seu horário?</div>
+      <div class="step-subtitle">Defina os dias e horas de funcionamento</div>
+
+      <div class="days-grid" id="daysGrid">
+        <div class="day-pill active" data-day="Seg" onclick="toggleDay(this)">Seg</div>
+        <div class="day-pill active" data-day="Ter" onclick="toggleDay(this)">Ter</div>
+        <div class="day-pill active" data-day="Qua" onclick="toggleDay(this)">Qua</div>
+        <div class="day-pill active" data-day="Qui" onclick="toggleDay(this)">Qui</div>
+        <div class="day-pill active" data-day="Sex" onclick="toggleDay(this)">Sex</div>
+        <div class="day-pill active" data-day="Sab" onclick="toggleDay(this)">Sab</div>
+        <div class="day-pill" data-day="Dom" onclick="toggleDay(this)">Dom</div>
+      </div>
+
+      <div class="time-row">
+        <label>Abre</label>
+        <input type="time" id="openTime" value="08:00" />
+        <label>Fecha</label>
+        <input type="time" id="closeTime" value="18:00" />
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Pausa para almoço?</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="lunchToggle" onchange="toggleLunch(this)" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <div class="lunch-times" id="lunchTimes">
+        <label>Pausa</label>
+        <input type="time" value="12:00" />
+        <span style="color:#8b8fa8;font-size:13px">até</span>
+        <input type="time" value="13:00" />
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step-panel step5-center" id="step5">
+      <div class="success-check">✓</div>
+      <div class="step-title">Seu lava-jato está configurado! 🎉</div>
+      <div class="step-subtitle" style="margin-bottom:1.75rem">Tudo pronto para começar a usar o LAVAI.</div>
+
+      <div class="summary-card" id="summaryCard">
+        <div class="summary-item">
+          <div class="summary-item-label">Negócio</div>
+          <div class="summary-item-value" id="sumBiz">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Cidade</div>
+          <div class="summary-item-value" id="sumCity">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Serviços</div>
+          <div class="summary-item-value" id="sumServices">2 ativos</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Equipe</div>
+          <div class="summary-item-value" id="sumTeam">1 pessoa</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Horário</div>
+          <div class="summary-item-value" id="sumHours">08:00–18:00</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Dias</div>
+          <div class="summary-item-value" id="sumDays">Seg–Sab</div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="quick-action-btn">
+          <span>Adicionar primeiro carro na fila</span>
+          <span class="quick-action-arrow">→</span>
+        </button>
+        <button class="quick-action-btn">
+          <span>Ver meu dashboard</span>
+          <span class="quick-action-arrow">→</span>
+        </button>
+        <button class="quick-action-btn">
+          <span>Ativar bot WhatsApp</span>
+          <span class="quick-action-arrow">→</span>
+        </button>
+      </div>
+
+      <button class="btn-cta">Começar a usar o LAVAI →</button>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-row" id="navRow">
+      <button class="btn-back" id="btnBack" onclick="prevStep()" disabled>Voltar</button>
+      <button class="btn-next" id="btnNext" onclick="nextStep()">Continuar</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const STEP_LABELS = [
+    'Passo 1 de 5 — Bem-vindo',
+    'Passo 2 de 5 — Seus serviços',
+    'Passo 3 de 5 — Sua equipe',
+    'Passo 4 de 5 — Horário de funcionamento',
+    'Passo 5 de 5 — Tudo pronto!'
+  ];
+
+  let currentStep = 1;
+  const totalSteps = 5;
+
+  function updateProgress() {
+    document.getElementById('stepLabel').textContent = STEP_LABELS[currentStep - 1];
+    for (let i = 1; i <= totalSteps; i++) {
+      const dot = document.getElementById('dot' + i);
+      dot.className = 'step-dot';
+      if (i < currentStep) dot.classList.add('completed');
+      else if (i === currentStep) dot.classList.add('current');
+    }
+    document.getElementById('btnBack').disabled = currentStep === 1;
+
+    const navRow = document.getElementById('navRow');
+    const btnNext = document.getElementById('btnNext');
+
+    if (currentStep === totalSteps) {
+      navRow.style.display = 'flex';
+      btnNext.style.display = 'none';
+    } else {
+      navRow.style.display = 'flex';
+      btnNext.style.display = '';
+      btnNext.textContent = 'Continuar';
+    }
+  }
+
+  function showStep(n) {
+    for (let i = 1; i <= totalSteps; i++) {
+      const panel = document.getElementById('step' + i);
+      panel.classList.remove('active');
+    }
+    const next = document.getElementById('step' + n);
+    next.classList.add('active');
+  }
+
+  function nextStep() {
+    if (currentStep < totalSteps) {
+      currentStep++;
+      if (currentStep === totalSteps) buildSummary();
+      showStep(currentStep);
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function prevStep() {
+    if (currentStep > 1) {
+      currentStep--;
+      showStep(currentStep);
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function toggleService(card) {
+    card.classList.toggle('selected');
+    const check = card.querySelector('.svc-check');
+    check.textContent = card.classList.contains('selected') ? '✓' : '';
+  }
+
+  function addEmployee() {
+    const list = document.getElementById('employeeList');
+    const row = document.createElement('div');
+    row.className = 'employee-row';
+    row.innerHTML = `
+      <input type="text" placeholder="Nome do funcionário" />
+      <select>
+        <option>Lavador</option>
+        <option>Polidor</option>
+        <option>Gerente</option>
+        <option>Caixa</option>
+      </select>
+      <button class="btn-remove-emp" onclick="removeEmployee(this)" title="Remover">×</button>
+    `;
+    list.appendChild(row);
+    row.querySelector('input').focus();
+  }
+
+  function removeEmployee(btn) {
+    const list = document.getElementById('employeeList');
+    if (list.children.length > 0) {
+      btn.closest('.employee-row').remove();
+    }
+  }
+
+  function skipTeam() {
+    document.getElementById('employeeList').innerHTML = '';
+    nextStep();
+  }
+
+  function toggleDay(pill) {
+    pill.classList.toggle('active');
+  }
+
+  function toggleLunch(chk) {
+    const lt = document.getElementById('lunchTimes');
+    lt.classList.toggle('visible', chk.checked);
+  }
+
+  function buildSummary() {
+    const biz = document.getElementById('bizName').value.trim() || '—';
+    const city = document.getElementById('city').value.trim() || '—';
+    const services = document.querySelectorAll('.service-card.selected').length;
+    const employees = document.getElementById('employeeList').children.length;
+    const open = document.getElementById('openTime').value;
+    const close = document.getElementById('closeTime').value;
+    const activeDays = [...document.querySelectorAll('.day-pill.active')].map(d => d.dataset.day);
+
+    document.getElementById('sumBiz').textContent = biz;
+    document.getElementById('sumCity').textContent = city;
+    document.getElementById('sumServices').textContent = services + (services === 1 ? ' ativo' : ' ativos');
+    document.getElementById('sumTeam').textContent = employees === 0 ? 'Só eu' : employees + (employees === 1 ? ' pessoa' : ' pessoas');
+    document.getElementById('sumHours').textContent = open + '–' + close;
+    document.getElementById('sumDays').textContent = activeDays.length ? activeDays.join(', ') : 'Nenhum';
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>
