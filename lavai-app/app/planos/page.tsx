@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { IS_DEMO } from '@/lib/demo'
 import {
   ArrowLeft,
   Check,
@@ -234,6 +235,18 @@ export default function PlanosPage() {
 
     setLoading(true)
     setError(null)
+
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 800))
+      setSuccess({
+        subscriptionId: 'DEMO-SUB-' + Date.now(),
+        billingType,
+        nextDueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+        value: selectedPlano === 'basico' ? 97 : selectedPlano === 'profissional' ? 197 : 599,
+      })
+      setLoading(false)
+      return
+    }
 
     try {
       const res = await fetch('/api/payments/create-subscription', {

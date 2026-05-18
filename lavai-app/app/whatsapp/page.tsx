@@ -3,6 +3,28 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
+import { IS_DEMO } from '@/lib/demo'
+
+// ── Demo conversations data ────────────────────────────────────
+const DEMO_CONVERSAS = [
+  { telefone: '11999991111', nome: 'Carlos Silva', ultima_mensagem: 'Quero agendar uma lavagem completa', ultima_vez: new Date(Date.now() - 10 * 60000).toISOString(), nao_lidas: 1 },
+  { telefone: '11999992222', nome: 'Ana Souza', ultima_mensagem: 'Obrigada pelo atendimento! ⭐⭐⭐⭐⭐', ultima_vez: new Date(Date.now() - 2 * 3600000).toISOString(), nao_lidas: 0 },
+  { telefone: '11999993333', nome: 'Roberto Nunes', ultima_mensagem: 'Que horas abre sábado?', ultima_vez: new Date(Date.now() - 5 * 3600000).toISOString(), nao_lidas: 2 },
+  { telefone: '11999994444', nome: 'Fernanda Lima', ultima_mensagem: 'Meu carro está pronto?', ultima_vez: new Date(Date.now() - 1 * 86400000).toISOString(), nao_lidas: 0 },
+]
+
+const DEMO_MENSAGENS: Record<string, Array<{ conteudo: string; direcao: string; created_at: string }>> = {
+  '11999991111': [
+    { conteudo: 'Olá! Gostaria de agendar uma lavagem completa para meu Onix.', direcao: 'entrada', created_at: new Date(Date.now() - 15 * 60000).toISOString() },
+    { conteudo: 'Olá Carlos! Claro, temos horários disponíveis hoje às 14h e 16h. Qual prefere?', direcao: 'saida', created_at: new Date(Date.now() - 12 * 60000).toISOString() },
+    { conteudo: 'Quero agendar uma lavagem completa', direcao: 'entrada', created_at: new Date(Date.now() - 10 * 60000).toISOString() },
+  ],
+  '11999993333': [
+    { conteudo: 'Boa tarde! Que horas abre sábado?', direcao: 'entrada', created_at: new Date(Date.now() - 6 * 3600000).toISOString() },
+    { conteudo: 'Sábado abrimos às 8h e fechamos às 18h!', direcao: 'saida', created_at: new Date(Date.now() - 5.5 * 3600000).toISOString() },
+    { conteudo: 'Que horas abre sábado?', direcao: 'entrada', created_at: new Date(Date.now() - 5 * 3600000).toISOString() },
+  ],
+}
 import {
   MessageCircle,
   Settings,
@@ -228,6 +250,11 @@ function ConversasTab() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const fetchConversas = useCallback(async () => {
+    if (IS_DEMO) {
+      setConversas(DEMO_CONVERSAS as any)
+      setLoading(false)
+      return
+    }
     try {
       const res = await fetch('/api/whatsapp/conversas')
       if (res.ok) {
@@ -240,6 +267,10 @@ function ConversasTab() {
   }, [])
 
   const fetchMensagens = useCallback(async (phone: string) => {
+    if (IS_DEMO) {
+      setMensagens((DEMO_MENSAGENS[phone] ?? []) as any)
+      return
+    }
     const res = await fetch(`/api/whatsapp/conversas?telefone=${encodeURIComponent(phone)}`)
     if (res.ok) {
       const { mensagens: data } = await res.json()
@@ -462,7 +493,7 @@ function ConfigurarTab({ lavaJatoId }: { lavaJatoId: string }) {
 
   useEffect(() => {
     setAppUrl(window.location.origin)
-    loadConfig()
+    if (!IS_DEMO) loadConfig()
   }, [])
 
   async function loadConfig() {
@@ -474,6 +505,13 @@ function ConfigurarTab({ lavaJatoId }: { lavaJatoId: string }) {
   }
 
   async function checkStatus() {
+    if (IS_DEMO) {
+      setCheckingStatus(true)
+      await new Promise(r => setTimeout(r, 800))
+      setStatus({ connected: false, qrCode: null, phone: null } as any)
+      setCheckingStatus(false)
+      return
+    }
     setCheckingStatus(true)
     try {
       const res = await fetch('/api/whatsapp/status')
@@ -485,6 +523,13 @@ function ConfigurarTab({ lavaJatoId }: { lavaJatoId: string }) {
 
   async function saveConfig() {
     setSaving(true)
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 500))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+      setSaving(false)
+      return
+    }
     try {
       const res = await fetch('/api/whatsapp/config', {
         method: 'POST',

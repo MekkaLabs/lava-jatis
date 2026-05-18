@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import { formatCurrency } from '@/lib/utils'
+import { IS_DEMO, DEMO_FUNCIONARIOS } from '@/lib/demo'
 import {
   Plus, Pencil, Trash2, X, User, Phone, Briefcase,
   DollarSign, Users, TrendingUp, CheckCircle, AlertCircle,
@@ -64,9 +65,10 @@ interface ModalProps {
   funcionario?: Funcionario | null
   onClose: () => void
   onSaved: (f: Funcionario) => void
+  isDemo?: boolean
 }
 
-function FuncionarioModal({ funcionario, onClose, onSaved }: ModalProps) {
+function FuncionarioModal({ funcionario, onClose, onSaved, isDemo }: ModalProps) {
   const isEdit = !!funcionario
   const [form, setForm] = useState({
     nome:     funcionario?.nome     ?? '',
@@ -85,6 +87,23 @@ function FuncionarioModal({ funcionario, onClose, onSaved }: ModalProps) {
     if (!form.cargo.trim()) { setErro('Cargo é obrigatório'); return }
     setSaving(true)
     setErro('')
+    // ── Demo mode ──────────────────────────────────────────────
+    if (isDemo) {
+      await new Promise(r => setTimeout(r, 400))
+      const demoFunc: Funcionario = {
+        id:         isEdit ? funcionario!.id : `demo-f-${Date.now()}`,
+        nome:       form.nome.trim(),
+        cargo:      form.cargo.trim(),
+        telefone:   form.telefone.trim() || undefined,
+        salario:    form.salario ? parseFloat(form.salario) : undefined,
+        created_at: funcionario?.created_at ?? new Date().toISOString(),
+      }
+      onSaved(demoFunc)
+      onClose()
+      setSaving(false)
+      return
+    }
+    // ── Real API ───────────────────────────────────────────────
     try {
       const url    = isEdit ? `/api/funcionarios/${funcionario!.id}` : '/api/funcionarios'
       const method = isEdit ? 'PATCH' : 'POST'
@@ -192,6 +211,11 @@ export default function EquipePage() {
     setToast({ msg, type })
 
   const load = useCallback(async () => {
+    if (IS_DEMO) {
+      setFuncionarios(DEMO_FUNCIONARIOS as any)
+      setLoading(false)
+      return
+    }
     try {
       const res  = await fetch('/api/funcionarios')
       const json = await res.json()
@@ -214,6 +238,13 @@ export default function EquipePage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Remover este funcionário?')) return
     setDeleting(id)
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 300))
+      setFuncionarios(prev => prev.filter(f => f.id !== id))
+      showToast('Funcionário removido.')
+      setDeleting(null)
+      return
+    }
     try {
       const res = await fetch(`/api/funcionarios/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Erro ao deletar')
@@ -424,6 +455,7 @@ export default function EquipePage() {
           funcionario={editTarget}
           onClose={() => { setShowModal(false); setEditTarget(null) }}
           onSaved={handleSaved}
+          isDemo={IS_DEMO}
         />
       )}
 

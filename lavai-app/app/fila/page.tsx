@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
+import { DEMO_ATENDIMENTOS, DEMO_SERVICOS } from '@/lib/demo'
+
+const IS_DEMO = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').includes('seu-projeto')
 import {
   CheckCircle2, Zap, Trash2, Plus, Search, X, ChevronDown, Clock,
 } from 'lucide-react'
@@ -284,6 +288,11 @@ export default function FilaPage() {
   const supabase = createClient()
 
   const loadAtendimentos = useCallback(async () => {
+    if (IS_DEMO) {
+      setAtendimentos(DEMO_ATENDIMENTOS)
+      setLoading(false)
+      return
+    }
     try {
       const res = await fetch('/api/atendimentos')
       const json = await res.json()
@@ -306,8 +315,8 @@ export default function FilaPage() {
   }, [])
 
   const loadServicos = useCallback(async () => {
+    if (IS_DEMO) { setServicos(DEMO_SERVICOS); return }
     try {
-      // Try API first, then supabase direct
       const supabaseClient = createClient()
       const { data } = await supabaseClient.from('servicos').select('id, nome, preco').order('nome')
       setServicos(data ?? [])
@@ -317,6 +326,8 @@ export default function FilaPage() {
   useEffect(() => {
     loadAtendimentos()
     loadServicos()
+
+    if (IS_DEMO) return // no realtime in demo mode
 
     // Real-time subscription via Supabase channel
     const channel = supabase
@@ -328,7 +339,6 @@ export default function FilaPage() {
           if (payload.eventType === 'INSERT') {
             const newRow = payload.new as any
             setAtendimentos(prev => {
-              // avoid duplicates
               if (prev.find(a => a.id === newRow.id)) return prev
               return [{
                 id: newRow.id,
@@ -360,6 +370,13 @@ export default function FilaPage() {
     if (actionLoading) return
     const nextStatus = currentStatus === 'aguardando' ? 'em_andamento' : 'concluido'
     setActionLoading(id)
+    // Demo: update state only
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 400))
+      setAtendimentos(prev => prev.map(a => a.id === id ? { ...a, status: nextStatus as AtendStatus } : a))
+      setActionLoading(null)
+      return
+    }
     try {
       const res = await fetch(`/api/atendimentos/${id}`, {
         method: 'PATCH',
@@ -379,6 +396,12 @@ export default function FilaPage() {
   const cancel = async (id: string) => {
     if (actionLoading) return
     setActionLoading(id)
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 300))
+      setAtendimentos(prev => prev.map(a => a.id === id ? { ...a, status: 'cancelado' as AtendStatus } : a))
+      setActionLoading(null)
+      return
+    }
     try {
       const res = await fetch(`/api/atendimentos/${id}`, { method: 'DELETE' })
       if (res.ok) {
@@ -392,6 +415,21 @@ export default function FilaPage() {
   }
 
   const createAtendimento = async (payload: any) => {
+    if (IS_DEMO) {
+      const newAt = {
+        id: `demo-${Date.now()}`,
+        cliente_nome: payload.clienteNome ?? 'Novo Cliente',
+        servico_nome: DEMO_SERVICOS.find(s => s.id === payload.servicoId)?.nome ?? 'Serviço',
+        servico_id: payload.servicoId,
+        placa: payload.placa ?? '',
+        modelo: payload.modelo ?? '',
+        status: 'aguardando' as AtendStatus,
+        preco_final: DEMO_SERVICOS.find(s => s.id === payload.servicoId)?.preco ?? 0,
+        created_at: new Date().toISOString(),
+      }
+      setAtendimentos(prev => [newAt, ...prev])
+      return newAt
+    }
     const res = await fetch('/api/atendimentos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

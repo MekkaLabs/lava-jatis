@@ -2,6 +2,32 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Download, TrendingUp, TrendingDown, Zap } from 'lucide-react'
+import { IS_DEMO } from '@/lib/demo'
+
+const DEMO_INSIGHTS_DATA = {
+  hasRealAI: false,
+  generatedAt: new Date().toISOString(),
+  metrics: {
+    atendimentosUltimos30Dias: 87,
+    receitaUltimos30Dias: 11280,
+    receitaMesAnterior: 9640,
+    ticketMedio: 130,
+    clientesAtivos: 42,
+    clientesNovos: 11,
+    despesasTotal: 2850,
+  },
+  reportNarrative: 'O lava-jato apresentou crescimento de 17% na receita em relação ao mês anterior, impulsionado pelo aumento de 23% no ticket médio. A retenção de clientes está saudável com 42 clientes ativos, e os serviços premium como polimento e higienização representam 65% da receita total. Há oportunidade de crescimento via programa de indicações e agendamento online.',
+  insights: [
+    { titulo: 'Receita em alta: crescimento de 17% no mês', descricao: 'A receita aumentou de R$9.640 para R$11.280 este mês. O principal driver foi o aumento de serviços premium (polimento e higienização), que têm ticket médio 3x maior que a lavagem simples.', acao: 'Ofereça combo "Lavagem + Polimento" com 10% de desconto para aumentar a adoção de serviços premium.', impacto: 'alto' as const, categoria: 'receita' as const },
+    { titulo: 'Sábado é o dia mais lucrativo — aproveite melhor', descricao: 'Sábados geram em média 2.6x mais receita que dias de semana. A fila fica cheia após 10h, mas há capacidade ociosa das 8h às 9h30.', acao: 'Crie um agendamento preferencial "Madrugador" às 8h com 5% de desconto para distribuir melhor a demanda.', impacto: 'médio' as const, categoria: 'operação' as const },
+    { titulo: '11 novos clientes — taxa de retorno abaixo do ideal', descricao: 'Você captou 11 novos clientes este mês, mas apenas 3 retornaram para uma segunda visita. A taxa de retenção de 27% pode ser melhorada com ações simples de relacionamento.', acao: 'Envie mensagem de WhatsApp para clientes que não retornam há mais de 15 dias com cupom de desconto de R$10.', impacto: 'alto' as const, categoria: 'clientes' as const },
+    { titulo: 'Despesas controladas: margem de 74,7%', descricao: 'As despesas de R$2.850 representam apenas 25,3% da receita, o que é excelente para o setor. O maior custo é folha de pagamento (63% das despesas), seguido por produtos de limpeza (18%).', acao: 'Compre produtos de limpeza em maior volume para negociar desconto de 15-20% com fornecedores.', impacto: 'baixo' as const, categoria: 'custo' as const },
+    { titulo: 'Programa de fidelidade com baixo engajamento', descricao: 'Apenas 8 clientes usaram o programa de pontos este mês. A maioria desconhece as recompensas disponíveis ou não sabe quantos pontos tem acumulados.', acao: 'Informe o saldo de pontos de cada cliente via WhatsApp ao final do atendimento para aumentar o engajamento em 40%.', impacto: 'médio' as const, categoria: 'marketing' as const },
+    { titulo: 'Horário morto: 13h–14h30 tem 70% de capacidade ociosa', descricao: 'O horário de almoço tem o menor volume de atendimentos da semana. Funcionários estão disponíveis mas o movimento é baixo. Pequenos ajustes podem aumentar o faturamento mensal em R$800+.', acao: 'Lance uma promoção "Almoço Relâmpago" das 13h às 14h30 com 15% de desconto para atrair clientes nesse horário.', impacto: 'médio' as const, categoria: 'receita' as const },
+    { titulo: 'Avaliações NPS positivas: oportunidade de marketing', descricao: 'Clientes com nota 5 estrelas (68% dos avaliados) raramente indicam o serviço proativamente. Transformar promotores em advogados da marca pode dobrar o crescimento orgânico.', acao: 'Peça aos clientes com 5 estrelas para deixar uma avaliação no Google Meu Negócio. Ofereça 20 pontos de bônus como incentivo.', impacto: 'alto' as const, categoria: 'marketing' as const },
+    { titulo: 'Serviço menos lucrativo: Lavagem Simples', descricao: 'A Lavagem Simples representa 35% dos atendimentos, mas apenas 12% da receita. O custo por atendimento (água, produto, tempo) é praticamente igual ao do serviço premium.', acao: 'Eleve o preço da Lavagem Simples em R$5 e crie um pacote "3 lavagens por R$X" para aumentar frequência e receita.', impacto: 'médio' as const, categoria: 'receita' as const },
+  ],
+}
 
 interface Insight {
   titulo: string
@@ -148,6 +174,15 @@ export default function InsightsPage() {
   const fetchInsights = useCallback(async (showSpinner = false) => {
     if (showSpinner) setSpinning(true)
     setError(false)
+    // ── Demo mode ──────────────────────────────────────────────
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 800))
+      setData({ ...DEMO_INSIGHTS_DATA, generatedAt: new Date().toISOString() })
+      setLoading(false)
+      if (showSpinner) setTimeout(() => setSpinning(false), 600)
+      return
+    }
+    // ── Real API ───────────────────────────────────────────────
     try {
       const res = await fetch('/api/ai/insights', { credentials: 'include' })
       if (!res.ok) throw new Error('fetch failed')

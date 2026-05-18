@@ -1,33 +1,59 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+
+// Demo credentials (only used when Supabase is not configured)
+const DEMO_LOGIN    = 'admin'
+const DEMO_PASSWORD = 'Am0cmph3@'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+  const [loading, setLoading]   = useState(false)
+  const [isDemoMode, setIsDemoMode] = useState(false)
+
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+    setIsDemoMode(!url || url.includes('seu-projeto'))
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-      setError(error.message === 'Invalid login credentials'
-        ? 'Email ou senha incorretos.'
-        : error.message)
-      setLoading(false)
+    // ── Demo mode ────────────────────────────────────────────
+    if (isDemoMode) {
+      if (email === DEMO_LOGIN && password === DEMO_PASSWORD) {
+        document.cookie = 'lavai_demo=true; path=/; max-age=86400'
+        router.push('/dashboard')
+      } else {
+        setError('Login ou senha incorretos.')
+        setLoading(false)
+      }
       return
     }
 
-    router.push('/dashboard')
+    // ── Supabase mode ─────────────────────────────────────────
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      const { error: authErr } = await supabase.auth.signInWithPassword({ email, password })
+      if (authErr) {
+        setError(authErr.message === 'Invalid login credentials'
+          ? 'Email ou senha incorretos.'
+          : authErr.message)
+        setLoading(false)
+        return
+      }
+      router.push('/dashboard')
+    } catch {
+      setError('Erro ao conectar. Verifique sua conexão.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -47,6 +73,14 @@ export default function LoginPage() {
           <p className="text-gray-400 mt-1 text-sm">Gerencie seu lava-jato com inteligencia</p>
         </div>
 
+        {/* Demo mode banner */}
+        {isDemoMode && (
+          <div className="mb-4 rounded-xl px-4 py-3 text-sm text-center"
+            style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)', color: '#00d4ff' }}>
+            🎮 <strong>Modo Demo</strong> — sem banco de dados
+          </div>
+        )}
+
         {/* Card */}
         <div
           className="rounded-2xl border p-8"
@@ -56,18 +90,17 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Email</label>
+              <label className="block text-sm text-gray-400 mb-1.5">
+                {isDemoMode ? 'Login' : 'Email'}
+              </label>
               <input
-                type="email"
+                type={isDemoMode ? 'text' : 'email'}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                placeholder="seu@email.com"
-                className="w-full rounded-lg px-4 py-3 text-white text-sm outline-none focus:ring-2 transition"
-                style={{
-                  backgroundColor: '#161728',
-                  border: '1px solid #2a2b3d',
-                }}
+                placeholder={isDemoMode ? 'admin' : 'seu@email.com'}
+                className="w-full rounded-lg px-4 py-3 text-white text-sm outline-none transition"
+                style={{ backgroundColor: '#161728', border: '1px solid #2a2b3d' }}
                 onFocus={e => (e.target.style.borderColor = '#00d4ff')}
                 onBlur={e => (e.target.style.borderColor = '#2a2b3d')}
               />

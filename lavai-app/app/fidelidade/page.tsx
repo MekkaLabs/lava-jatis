@@ -12,6 +12,32 @@ import {
 } from 'lucide-react'
 import { NIVEL_COLORS, NIVEL_LABELS, NIVEL_EMOJIS, TIPO_LABELS, DEFAULT_CONFIG } from '@/lib/fidelidade'
 import type { FidelidadeConfig } from '@/lib/fidelidade'
+import { IS_DEMO, DEMO_CLIENTES } from '@/lib/demo'
+
+// ─── Demo data ────────────────────────────────────────────────────────────────
+const DEMO_PONTOS_CLIENTES = DEMO_CLIENTES.map(c => ({
+  id: `pc-${c.id}`,
+  pontos_total: c.pontos + Math.floor(c.pontos * 0.2),
+  pontos_disponiveis: c.pontos,
+  nivel: c.nivel,
+  total_gasto: c.total_gasto,
+  total_atendimentos: c.total_atendimentos,
+  ultima_visita: c.ultima_visita,
+  clientes: { id: c.id, nome: c.nome, telefone: c.telefone, email: c.email },
+}))
+
+const DEMO_RECOMPENSAS = [
+  { id: 'r1', nome: 'Lavagem Grátis', descricao: 'Uma lavagem simples gratuita', pontos_necessarios: 100, tipo: 'servico_gratis', valor_desconto: null, ativo: true, estoque: null },
+  { id: 'r2', nome: 'Desconto 20%', descricao: 'Desconto de 20% em qualquer serviço', pontos_necessarios: 150, tipo: 'desconto', valor_desconto: 20, ativo: true, estoque: null },
+  { id: 'r3', nome: 'Polimento Grátis', descricao: 'Polimento completo gratuito', pontos_necessarios: 400, tipo: 'servico_gratis', valor_desconto: null, ativo: true, estoque: 5 },
+  { id: 'r4', nome: 'Kit Limpeza', descricao: 'Kit de produtos de limpeza automotiva', pontos_necessarios: 200, tipo: 'brinde', valor_desconto: null, ativo: false, estoque: 10 },
+]
+
+const DEMO_RESGATES = [
+  { id: 'rg1', pontos_usados: 100, status: 'resgatado', codigo_resgate: 'LVA-X291', created_at: new Date(Date.now() - 2 * 86400000).toISOString(), clientes: { nome: 'Carlos Silva' }, recompensas: { nome: 'Lavagem Grátis', tipo: 'servico_gratis' } },
+  { id: 'rg2', pontos_usados: 150, status: 'pendente', codigo_resgate: 'LVA-K847', created_at: new Date(Date.now() - 5 * 86400000).toISOString(), clientes: { nome: 'Fernanda Lima' }, recompensas: { nome: 'Desconto 20%', tipo: 'desconto' } },
+  { id: 'rg3', pontos_usados: 400, status: 'resgatado', codigo_resgate: 'LVA-M103', created_at: new Date(Date.now() - 10 * 86400000).toISOString(), clientes: { nome: 'Ana Souza' }, recompensas: { nome: 'Polimento Grátis', tipo: 'servico_gratis' } },
+]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -814,6 +840,17 @@ export default function FidelidadePage() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    // ── Demo mode ──────────────────────────────────────────────
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 500))
+      setClientes(DEMO_PONTOS_CLIENTES as any)
+      setRecompensas(DEMO_RECOMPENSAS as any)
+      setResgates(DEMO_RESGATES as any)
+      setConfig(DEFAULT_CONFIG)
+      setLoading(false)
+      return
+    }
+    // ── Real API ───────────────────────────────────────────────
     try {
       const [rClientes, rRecompensas, rResgates, rConfig] = await Promise.all([
         fetch('/api/fidelidade/pontos').then(r => r.json()),

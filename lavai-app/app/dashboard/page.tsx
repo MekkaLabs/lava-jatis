@@ -9,7 +9,56 @@ import QuickActions from './components/QuickActions'
 import { formatCurrency } from '@/lib/utils'
 import AIInsightPanel from './components/AIInsightPanel'
 
+// ── Demo data (used when Supabase is not configured) ─────────────────────────
+function getDemoData() {
+  const receitaUltimos7Dias = [
+    { date: 'Seg 12', receita: 1240 },
+    { date: 'Ter 13', receita: 980 },
+    { date: 'Qua 14', receita: 1560 },
+    { date: 'Qui 15', receita: 2100 },
+    { date: 'Sex 16', receita: 1870 },
+    { date: 'Sáb 17', receita: 2640 },
+    { date: 'Dom 18', receita: 890 },
+  ]
+  return {
+    nomeLavaJato: 'Lava-Jato Demo',
+    atendimentosHoje: 18,
+    receitaMes: 34560,
+    clientesNovos: 7,
+    filaAtual: [
+      { id: '1', cliente_nome: 'Carlos Silva',   servico_nome: 'Lavagem Completa', placa: 'ABC-1234', modelo: 'Onix',    status: 'em_andamento', created_at: new Date(Date.now() - 25 * 60000).toISOString() },
+      { id: '2', cliente_nome: 'Ana Souza',       servico_nome: 'Polimento',        placa: 'DEF-5678', modelo: 'HB20',    status: 'aguardando',   created_at: new Date(Date.now() - 10 * 60000).toISOString() },
+      { id: '3', cliente_nome: 'Roberto Nunes',   servico_nome: 'Lavagem Simples',  placa: 'GHI-9012', modelo: 'Gol',     status: 'aguardando',   created_at: new Date(Date.now() -  5 * 60000).toISOString() },
+      { id: '4', cliente_nome: 'Fernanda Lima',   servico_nome: 'Higienização',     placa: 'JKL-3456', modelo: 'Corolla', status: 'aguardando',   created_at: new Date(Date.now() -  2 * 60000).toISOString() },
+    ],
+    topServicos: [
+      { nome: 'Lavagem Completa', count: 142, receita: 8520 },
+      { nome: 'Polimento',        count:  38, receita: 5700 },
+      { nome: 'Lavagem Simples',  count: 210, receita: 6300 },
+      { nome: 'Higienização',     count:  24, receita: 3600 },
+    ],
+    receitaUltimos7Dias,
+    sparklineReceita: receitaUltimos7Dias.map(d => d.receita),
+    nps: {
+      media: 4.8,
+      total: 23,
+      recentes: [
+        { cliente_nome: 'Carlos Silva',  nota: 5, comentario: 'Serviço impecável!', created_at: new Date(Date.now() - 2 * 3600000).toISOString() },
+        { cliente_nome: 'Ana Souza',     nota: 5, comentario: 'Muito rápido e caprichado.', created_at: new Date(Date.now() - 5 * 3600000).toISOString() },
+        { cliente_nome: 'Roberto Nunes', nota: 4, comentario: null, created_at: new Date(Date.now() - 24 * 3600000).toISOString() },
+        { cliente_nome: 'Fernanda Lima', nota: 5, comentario: 'Sempre venho aqui!', created_at: new Date(Date.now() - 48 * 3600000).toISOString() },
+      ],
+    },
+  }
+}
+
 async function getDashboardData() {
+  // Demo mode: Supabase not configured
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  if (!supabaseUrl || supabaseUrl.includes('seu-projeto')) {
+    return getDemoData()
+  }
+
   const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect('/login')

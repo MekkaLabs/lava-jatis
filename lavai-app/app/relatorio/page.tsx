@@ -1,6 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { IS_DEMO } from '@/lib/demo'
+
+const DEMO_KPIS = {
+  atendimentos: 87,
+  receita: 11280,
+  ticketMedio: 130,
+  despesas: 2850,
+  lucro: 8430,
+  novosClientes: 11,
+  receitaAnterior: 9640,
+  crescimento: 17,
+}
 import {
   ChevronLeft,
   ChevronRight,
@@ -223,6 +235,12 @@ export default function RelatorioPage() {
   const fetchKpis = useCallback(async () => {
     setLoadingKpis(true)
     setKpis(null)
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 400))
+      setKpis(DEMO_KPIS as any)
+      setLoadingKpis(false)
+      return
+    }
     try {
       const res = await fetch(
         `/api/relatorio/preview?semana=${selectedWeek.semanaParam}`
@@ -244,6 +262,7 @@ export default function RelatorioPage() {
 
   // Fetch email preference
   useEffect(() => {
+    if (IS_DEMO) return
     fetch('/api/relatorio/config')
       .then((r) => r.json())
       .then((d) => {
@@ -256,6 +275,12 @@ export default function RelatorioPage() {
 
   async function handleDownloadPdf() {
     setLoadingPdf(true)
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 800))
+      showToast('PDF disponível após conectar Supabase', 'info' as any)
+      setLoadingPdf(false)
+      return
+    }
     try {
       const res = await fetch(`/api/relatorio/pdf?semana=${selectedWeek.semanaParam}`)
       if (!res.ok) {
@@ -279,6 +304,12 @@ export default function RelatorioPage() {
 
   async function handleSendEmail() {
     setLoadingEmail(true)
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 600))
+      showToast('Email disponível após conectar Resend', 'info' as any)
+      setLoadingEmail(false)
+      return
+    }
     try {
       const res = await fetch('/api/relatorio/email', {
         method: 'POST',
@@ -301,6 +332,12 @@ export default function RelatorioPage() {
   async function handleToggleEmail() {
     setLoadingToggle(true)
     const novoValor = !emailAtivo
+    if (IS_DEMO) {
+      await new Promise(r => setTimeout(r, 300))
+      setEmailAtivo(novoValor)
+      setLoadingToggle(false)
+      return
+    }
     try {
       const res = await fetch('/api/relatorio/config', {
         method: 'PATCH',
@@ -514,6 +551,7 @@ export default function RelatorioPage() {
                 </div>
                 <button
                   onClick={async () => {
+                    if (IS_DEMO) { showToast('PDF disponível após conectar Supabase', 'info' as any); return }
                     setLoadingPdf(true)
                     try {
                       const res = await fetch(

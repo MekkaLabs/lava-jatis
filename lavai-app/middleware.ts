@@ -92,11 +92,35 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── Supabase session refresh + auth guard ──────────────────────────────────
+  // ── Demo mode: bypass auth when Supabase is not configured ──────────────────
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const isDemoMode = !supabaseUrl || supabaseUrl.includes('seu-projeto') || supabaseUrl === ''
+
+  const protectedPaths = [
+    '/dashboard', '/fila', '/financeiro', '/clientes', '/equipe',
+    '/agendamentos', '/fidelidade', '/whatsapp', '/relatorio',
+    '/insights', '/configuracoes', '/planos',
+  ]
+  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
+
   let response = NextResponse.next({ request: { headers: request.headers } })
 
+  if (isDemoMode) {
+    // No Supabase — allow access to dashboard with demo cookie
+    const demoCookie = request.cookies.get('lavai_demo')?.value
+    if (isProtected && demoCookie !== 'true') {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    if (pathname === '/login' && demoCookie === 'true') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v))
+    return response
+  }
+
+  // ── Supabase session refresh + auth guard ──────────────────────────────────
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
@@ -118,13 +142,6 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { session } } = await supabase.auth.getSession()
-
-  const protectedPaths = [
-    '/dashboard', '/fila', '/financeiro', '/clientes', '/equipe',
-    '/agendamentos', '/fidelidade', '/whatsapp', '/relatorio',
-    '/insights', '/configuracoes', '/planos',
-  ]
-  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
 
   if (isProtected && !session) {
     console.warn(
