@@ -56,10 +56,10 @@ async function computeWeeklyStats(
 
   return {
     atendimentos: currentAtend.data?.length ?? 0,
-    receitaTotal: currentAtend.data?.reduce((sum, a) => sum + (a.valor_cobrado ?? 0), 0) ?? 0,
+    receitaTotal: currentAtend.data?.reduce((sum: number, a: any) => sum + (a.valor_cobrado ?? 0), 0) ?? 0,
     clientesNovos: novosClientes.data?.length ?? 0,
     atendimentosSemanaAnterior: prevAtend.data?.length ?? 0,
-    receitaSemanaAnterior: prevAtend.data?.reduce((sum, a) => sum + (a.valor_cobrado ?? 0), 0) ?? 0,
+    receitaSemanaAnterior: prevAtend.data?.reduce((sum: number, a: any) => sum + (a.valor_cobrado ?? 0), 0) ?? 0,
     clientesNovosSemanaAnterior: novosClientesPrev.data?.length ?? 0,
     nomeEstabelecimento,
   }

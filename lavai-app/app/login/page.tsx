@@ -67,7 +67,6 @@ export default function LoginPage() {
                 style={{
                   backgroundColor: '#161728',
                   border: '1px solid #2a2b3d',
-                  focusRingColor: '#00d4ff',
                 }}
                 onFocus={e => (e.target.style.borderColor = '#00d4ff')}
                 onBlur={e => (e.target.style.borderColor = '#2a2b3d')}

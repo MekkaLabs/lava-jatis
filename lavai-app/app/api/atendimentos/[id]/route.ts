@@ -68,6 +68,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     logger.info('atendimentos.updated', { id: params.id, lavaJatoId })
+
+    // Fire-and-forget NPS when service is completed
+    if (updates.status === 'concluido') {
+      const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+      fetch(`${base}/api/nps/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: req.headers.get('cookie') ?? '' },
+        body: JSON.stringify({ atendimentoId: params.id }),
+      }).catch(() => { /* non-critical */ })
+    }
+
     return ok({ data })
   } catch (e: any) {
     if (e instanceof Response) return e

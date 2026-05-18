@@ -1,12 +1,13 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
-import { Car, DollarSign, Users, Clock } from 'lucide-react'
+import { Car, DollarSign, Users, Clock, Star } from 'lucide-react'
 import DashboardHeader from './components/DashboardHeader'
 import MetricCard from './components/MetricCard'
 import RevenueChart from './components/RevenueChart'
 import FilaCard from './components/FilaCard'
 import QuickActions from './components/QuickActions'
 import { formatCurrency } from '@/lib/utils'
+import AIInsightPanel from './components/AIInsightPanel'
 
 async function getDashboardData() {
   const supabase = createServerSupabaseClient()
@@ -107,6 +108,22 @@ async function getDashboardData() {
   const receitaUltimos7Dias = days.map(({ date, receita }) => ({ date, receita }))
   const sparklineReceita = receitaUltimos7Dias.map(d => d.receita)
 
+  // NPS — últimas avaliações + média
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: npsRows } = await supabase
+    .from('nps_avaliacoes')
+    .select('nota, cliente_nome, comentario, created_at')
+    .eq('lava_jato_id', lavaJatoId)
+    .gte('created_at', thirtyDaysAgo)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  const npsTotal = npsRows?.length ?? 0
+  const npsMedia = npsTotal > 0
+    ? Math.round((npsRows!.reduce((s: number, r: any) => s + r.nota, 0) / npsTotal) * 10) / 10
+    : null
+  const npsRecentes = (npsRows ?? []).slice(0, 4)
+
   return {
     nomeLavaJato: lavaJato.nome ?? 'Lava-Jato',
     atendimentosHoje: atendimentosHoje ?? 0,
@@ -116,6 +133,7 @@ async function getDashboardData() {
     topServicos,
     receitaUltimos7Dias,
     sparklineReceita,
+    nps: { media: npsMedia, total: npsTotal, recentes: npsRecentes },
   }
 }
 
@@ -146,6 +164,7 @@ export default async function DashboardPage() {
     topServicos,
     receitaUltimos7Dias,
     sparklineReceita,
+    nps,
   } = data
 
   const greeting = getGreeting()
@@ -291,6 +310,73 @@ export default async function DashboardPage() {
 
         {/* Revenue Chart */}
         <RevenueChart data={receitaUltimos7Dias} />
+
+        {/* NPS Widget */}
+        {nps.total > 0 && (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            {/* NPS Score card */}
+            <div className="rounded-2xl p-5 flex flex-col items-center justify-center text-center"
+              style={{ background: 'rgba(255,214,0,0.04)', border: '1px solid rgba(255,214,0,0.15)' }}>
+              <div className="flex gap-0.5 mb-2">
+                {[1,2,3,4,5].map(n => (
+                  <Star key={n} size={18}
+                    fill={(nps.media ?? 0) >= n ? '#ffd600' : 'transparent'}
+                    stroke={(nps.media ?? 0) >= n ? '#ffd600' : 'rgba(255,255,255,0.2)'}
+                    strokeWidth={1.5}
+                  />
+                ))}
+              </div>
+              <p className="text-3xl font-bold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                {nps.media?.toFixed(1) ?? '—'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Nota média (30 dias)</p>
+              <p className="text-xs text-gray-400 mt-2 font-medium">{nps.total} avaliação{nps.total !== 1 ? 'ões' : ''}</p>
+            </div>
+
+            {/* Recent reviews */}
+            <div className="xl:col-span-2 rounded-2xl p-5"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <h2 className="font-semibold text-white text-sm mb-4 flex items-center gap-2">
+                <Star size={14} style={{ color: '#ffd600' }} />
+                Avaliações Recentes
+              </h2>
+              <div className="space-y-3">
+                {nps.recentes.map((r: any, i: number) => (
+                  <div key={i} className="flex items-start gap-3 py-2 border-b last:border-0"
+                    style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ background: 'rgba(0,212,255,0.1)', color: '#00d4ff' }}>
+                      {(r.cliente_nome ?? 'C').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white truncate">{r.cliente_nome ?? 'Cliente'}</span>
+                        <div className="flex gap-0.5 shrink-0">
+                          {[1,2,3,4,5].map(n => (
+                            <Star key={n} size={10}
+                              fill={r.nota >= n ? '#ffd600' : 'transparent'}
+                              stroke={r.nota >= n ? '#ffd600' : 'rgba(255,255,255,0.2)'}
+                              strokeWidth={1.5}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {r.comentario && (
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">{r.comentario}</p>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-gray-600 shrink-0">
+                      {new Date(r.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AI Insights Panel */}
+        <AIInsightPanel />
       </div>
     </div>
   )

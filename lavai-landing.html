@@ -1090,6 +1090,33 @@ footer {
   .hero-stats { gap: 28px; }
   .trust-badges { gap: 14px; justify-content: center; }
 }
+
+/* ===== HAMBURGER MOBILE ===== */
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  margin-left: 8px;
+}
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--white);
+  border-radius: 2px;
+  transition: all .25s;
+}
+@media (max-width: 768px) {
+  .nav-links { display: none !important; }
+  .nav-hamburger { display: flex; }
+  .nav-cta .btn { display: none; }
+  .nav-cta { gap: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -1102,36 +1129,48 @@ footer {
 </div>
 
 <!-- NAV -->
-<nav>
+<nav id="mainNav">
   <a href="#" class="nav-logo">
-    <div class="nav-logo-icon">💧</div>
+    <div class="nav-logo-icon">⚡</div>
     LAVAI
   </a>
-  <ul class="nav-links">
-    <li><a href="#features">Funcionalidades</a></li>
-    <li><a href="#pricing">Preços</a></li>
-    <li><a href="#testimonials">Clientes</a></li>
-    <li><a href="#demo">Demo</a></li>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#como-funciona" onclick="closeMenu()">Como funciona</a></li>
+    <li><a href="#features" onclick="closeMenu()">Funcionalidades</a></li>
+    <li><a href="#pricing" onclick="closeMenu()">Preços</a></li>
+    <li><a href="#testimonials" onclick="closeMenu()">Clientes</a></li>
   </ul>
   <div class="nav-cta">
-    <a href="lavai-onboarding.html" class="btn btn-ghost">Entrar</a>
+    <a href="/login" class="btn btn-ghost">Entrar</a>
     <a href="#cta" class="btn btn-primary">Teste grátis →</a>
+    <button class="nav-hamburger" id="navHamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
+<!-- Mobile nav overlay -->
+<div id="mobileMenu" style="display:none;position:fixed;inset:0;z-index:199;background:rgba(8,9,15,0.97);backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:80px 24px 40px">
+  <a href="#como-funciona" onclick="closeMenu()" style="font-size:22px;font-weight:700;color:#fff;text-decoration:none">Como funciona</a>
+  <a href="#features" onclick="closeMenu()" style="font-size:22px;font-weight:700;color:#fff;text-decoration:none">Funcionalidades</a>
+  <a href="#pricing" onclick="closeMenu()" style="font-size:22px;font-weight:700;color:#fff;text-decoration:none">Preços</a>
+  <a href="#testimonials" onclick="closeMenu()" style="font-size:22px;font-weight:700;color:#fff;text-decoration:none">Clientes</a>
+  <a href="#cta" onclick="closeMenu()" class="btn-hero-primary" style="margin-top:16px">Criar conta grátis →</a>
+  <button onclick="closeMenu()" style="position:absolute;top:20px;right:24px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer">✕</button>
+</div>
 
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">
     <span class="hero-badge-dot"></span>
-    Mais de 400 lava-jatos ativos no Brasil
+    🏆 Mais de 400 lava-jatos ativos no Brasilnbsp;412 lava-jatos ativos · 4.9★ de satisfação
   </div>
 
-  <h1>Seu lava-jato no automático —<br>do <span class="cyan">agendamento</span> ao pagamento</h1>
+  <h1>Chega de caderno.<br>Seu lava-jato no <span class="cyan">automático</span> agora.</h1>
 
-  <p class="hero-sub">Mais de 400 lava-jatos já usam o LAVAI para faturar mais e trabalhar menos. Gerencie fila, financeiro e equipe em um só lugar.</p>
+  <p class="hero-sub">Gerencie fila, financeiro, WhatsApp e equipe em um só lugar. Resultado médio: <strong style="color:#00e676">+32% de receita em 90 dias</strong>.</p>
 
   <div class="hero-actions">
-    <a href="#cta" class="btn-hero-primary">Começar grátis por 14 dias →</a>
+    <a href="#cta" class="btn-hero-primary">🚀 &nbsp;Começar grátis — 14 dias sem cobrar →</a>
     <a href="#demo" class="btn-hero-outline">▶ Ver demonstração</a>
   </div>
 
@@ -1263,6 +1302,35 @@ footer {
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section id="como-funciona" style="padding:80px 5%;position:relative;z-index:1;background:linear-gradient(180deg,transparent,rgba(0,212,255,0.02) 50%,transparent)">
+  <div style="text-align:center;max-width:640px;margin:0 auto 56px">
+    <div class="section-label">Como funciona</div>
+    <h2 class="section-title">Do zero ao automático em 3 passos</h2>
+    <p class="section-sub">Sem instalação, sem treinamento técnico. Você configura hoje e já usa amanhã.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px;max-width:900px;margin:0 auto">
+    <div class="reveal" style="background:rgba(255,255,255,0.025);border:1px solid rgba(0,212,255,0.12);border-radius:20px;padding:32px 28px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:16px;right:20px;font-size:56px;font-weight:900;color:rgba(0,212,255,0.06);line-height:1;user-select:none">01</div>
+      <div style="width:48px;height:48px;background:rgba(0,212,255,0.12);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px">⚡</div>
+      <h3 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:10px">Cadastre em 2 minutos</h3>
+      <p style="color:#8b8fa8;font-size:14px;line-height:1.6">Crie sua conta gratuitamente, adicione os serviços do seu lava-jato e pronto. Sem precisar de cartão de crédito.</p>
+    </div>
+    <div class="reveal" style="background:rgba(255,255,255,0.025);border:1px solid rgba(0,230,118,0.12);border-radius:20px;padding:32px 28px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:16px;right:20px;font-size:56px;font-weight:900;color:rgba(0,230,118,0.06);line-height:1;user-select:none">02</div>
+      <div style="width:48px;height:48px;background:rgba(0,230,118,0.12);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px">🚗</div>
+      <h3 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:10px">Abra a fila no celular</h3>
+      <p style="color:#8b8fa8;font-size:14px;line-height:1.6">Registre carros, acompanhe o andamento em tempo real e notifique o cliente pelo WhatsApp com um toque.</p>
+    </div>
+    <div class="reveal" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,214,0,0.12);border-radius:20px;padding:32px 28px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:16px;right:20px;font-size:56px;font-weight:900;color:rgba(255,214,0,0.06);line-height:1;user-select:none">03</div>
+      <div style="width:48px;height:48px;background:rgba(255,214,0,0.1);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px">📈</div>
+      <h3 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:10px">Veja o dinheiro crescer</h3>
+      <p style="color:#8b8fa8;font-size:14px;line-height:1.6">Relatórios automáticos todo final de semana, IA que identifica onde você está perdendo dinheiro e sugestões de melhoria.</p>
     </div>
   </div>
 </section>
@@ -1683,18 +1751,65 @@ footer {
       </button>
       <div class="faq-answer">Todos os planos têm suporte via WhatsApp e chat em português. No plano Profissional o suporte é prioritário com resposta em até 2 horas. No Enterprise, você tem gerente de conta dedicado.</div>
     </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Preciso instalar alguma coisa?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-answer">Não! O LAVAI funciona 100% no navegador, sem instalar nada no computador ou celular. Acesse pelo Chrome, Safari ou qualquer navegador moderno. Também temos PWA — você pode "salvar na tela inicial" no celular e usar como se fosse um aplicativo nativo.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        O bot de WhatsApp funciona com qualquer número?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-answer">Sim, o bot funciona com qualquer número de WhatsApp (pessoal ou comercial). No plano Profissional você conecta seu número e o bot responde automaticamente: agendamentos, status do carro, avaliação pós-serviço e muito mais.</div>
+    </div>
   </div>
 </section>
 
 <!-- CTA FINAL -->
 <section class="cta-section" id="cta">
+  <!-- Urgency banner -->
+  <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:50px;display:inline-flex;align-items:center;gap:10px;padding:8px 20px;margin-bottom:24px;font-size:13px;font-weight:600;color:#00e676">
+    <span style="width:8px;height:8px;background:#00e676;border-radius:50%;animation:pulse 2s infinite;display:inline-block"></span>
+    <span>23 lava-jatos iniciaram o trial esta semana</span>
+  </div>
+
   <div class="section-label" style="text-align:center">Comece agora</div>
-  <h2>Seu lava-jato pode faturar<br><span>muito mais</span> este mês</h2>
-  <p>14 dias grátis, sem cartão de crédito. Setup em 2 minutos.</p>
-  <a href="lavai-onboarding.html" class="btn-hero-primary" style="display:inline-flex;margin:0 auto;">
-    Criar conta grátis →
+  <h2>Cada dia sem o LAVAI é<br><span>dinheiro deixado na mesa</span></h2>
+  <p>14 dias grátis, sem cartão. Você configura hoje e já usa amanhã de manhã.</p>
+
+  <a href="lavai-onboarding.html" class="btn-hero-primary" style="display:inline-flex;margin:0 auto;font-size:17px;padding:18px 40px">
+    🚀 &nbsp;Criar minha conta grátis →
   </a>
-  <div class="cta-small">✓ Sem cartão de crédito &nbsp;·&nbsp; ✓ Cancele quando quiser &nbsp;·&nbsp; ✓ Suporte em português</div>
+
+  <div class="cta-small">✓ Sem cartão de crédito &nbsp;·&nbsp; ✓ Setup em 2 minutos &nbsp;·&nbsp; ✓ Cancele quando quiser &nbsp;·&nbsp; ✓ Suporte em português</div>
+
+  <!-- Social proof row -->
+  <div style="display:flex;justify-content:center;align-items:center;gap:32px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.07)">
+    <div style="text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#fff">412</div>
+      <div style="font-size:12px;color:#8b8fa8">Lava-jatos ativos</div>
+    </div>
+    <div style="width:1px;height:32px;background:rgba(255,255,255,0.1)"></div>
+    <div style="text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#00e676">4.9★</div>
+      <div style="font-size:12px;color:#8b8fa8">Satisfação média</div>
+    </div>
+    <div style="width:1px;height:32px;background:rgba(255,255,255,0.1)"></div>
+    <div style="text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#00d4ff">+32%</div>
+      <div style="font-size:12px;color:#8b8fa8">Receita em 90 dias</div>
+    </div>
+    <div style="width:1px;height:32px;background:rgba(255,255,255,0.1)"></div>
+    <div style="text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#ffd600">R$0</div>
+      <div style="font-size:12px;color:#8b8fa8">Primeiros 14 dias</div>
+    </div>
+  </div>
 </section>
 
 <!-- FOOTER -->
@@ -1851,6 +1966,36 @@ function calcROI() {
 }
 
 calcROI();
+
+/* ===== MOBILE MENU ===== */
+function toggleMenu() {
+  const menu = document.getElementById('mobileMenu');
+  const isOpen = menu.style.display === 'flex';
+  menu.style.display = isOpen ? 'none' : 'flex';
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+function closeMenu() {
+  const menu = document.getElementById('mobileMenu');
+  menu.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+/* ===== ACTIVE NAV ON SCROLL ===== */
+const navSections = ['como-funciona', 'features', 'pricing', 'testimonials'];
+const navObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      document.querySelectorAll('.nav-links a').forEach(a => {
+        a.style.color = a.getAttribute('href') === '#' + entry.target.id ? '#00d4ff' : '';
+      });
+    }
+  });
+}, { threshold: 0.4 });
+navSections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) navObserver.observe(el);
+});
+
 </script>
 </body>
 </html>

@@ -79,8 +79,8 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
     })
   )
 
-  const sent = results.filter((r) => r.status === 'fulfilled').length
-  const errors = results.filter((r) => r.status === 'rejected').length
+  const sent = results.filter((r: PromiseSettledResult<unknown>) => r.status === 'fulfilled').length
+  const errors = results.filter((r: PromiseSettledResult<unknown>) => r.status === 'rejected').length
 
   return { sent, errors }
 }
@@ -116,8 +116,8 @@ export async function sendPushToLavaJato(lavaJatoId: string, payload: PushPayloa
     })
   )
 
-  const sent = results.filter((r) => r.status === 'fulfilled').length
-  const errors = results.filter((r) => r.status === 'rejected').length
+  const sent = results.filter((r: PromiseSettledResult<unknown>) => r.status === 'fulfilled').length
+  const errors = results.filter((r: PromiseSettledResult<unknown>) => r.status === 'rejected').length
 
   return { sent, errors }
 }

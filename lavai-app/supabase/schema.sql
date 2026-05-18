@@ -71,6 +71,11 @@ create table if not exists funcionarios (
   created_at timestamptz default now()
 );
 
+-- Relatório email schedule preferences
+ALTER TABLE lava_jatos ADD COLUMN IF NOT EXISTS relatorio_email_ativo BOOLEAN DEFAULT true;
+ALTER TABLE lava_jatos ADD COLUMN IF NOT EXISTS relatorio_email_dia INTEGER DEFAULT 1; -- 1=segunda
+ALTER TABLE lava_jatos ADD COLUMN IF NOT EXISTS relatorio_email_hora INTEGER DEFAULT 8;
+
 -- RLS (Row Level Security)
 alter table lava_jatos enable row level security;
 alter table servicos enable row level security;

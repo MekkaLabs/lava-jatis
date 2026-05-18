@@ -100,14 +100,16 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) { return request.cookies.get(name)?.value },
-        set(name, value, options) {
-          request.cookies.set({ name, value, ...options })
+        get(name: string) { return request.cookies.get(name)?.value },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        set(name: string, value: string, options: any) {
+          request.cookies.set(name, value)
           response = NextResponse.next({ request: { headers: request.headers } })
           response.cookies.set({ name, value, ...options })
         },
-        remove(name, options) {
-          request.cookies.set({ name, value: '', ...options })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        remove(name: string, options: any) {
+          request.cookies.set(name, '')
           response = NextResponse.next({ request: { headers: request.headers } })
           response.cookies.set({ name, value: '', ...options })
         },
@@ -117,7 +119,11 @@ export async function middleware(request: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
 
-  const protectedPaths = ['/dashboard', '/fila', '/financeiro', '/clientes', '/equipe']
+  const protectedPaths = [
+    '/dashboard', '/fila', '/financeiro', '/clientes', '/equipe',
+    '/agendamentos', '/fidelidade', '/whatsapp', '/relatorio',
+    '/insights', '/configuracoes', '/planos',
+  ]
   const isProtected = protectedPaths.some(p => pathname.startsWith(p))
 
   if (isProtected && !session) {

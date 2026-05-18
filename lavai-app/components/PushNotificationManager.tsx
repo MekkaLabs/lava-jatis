@@ -65,7 +65,7 @@ export default function PushNotificationManager() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
           process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
-        ),
+        ).buffer as ArrayBuffer,
       })
 
       const res = await fetch('/api/push/subscribe', {

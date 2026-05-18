@@ -106,6 +106,22 @@ export async function GET(req: NextRequest) {
 
     const receitaUltimos7Dias = days.map(({ date, receita }) => ({ date, receita }))
 
+    // NPS médio (últimos 30 dias)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: npsRows } = await supabase
+      .from('nps_avaliacoes')
+      .select('nota, cliente_nome, comentario, created_at')
+      .eq('lava_jato_id', lavaJatoId)
+      .gte('created_at', thirtyDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    const npsTotal  = npsRows?.length ?? 0
+    const npsMedia  = npsTotal > 0
+      ? Math.round((npsRows!.reduce((s, r) => s + r.nota, 0) / npsTotal) * 10) / 10
+      : null
+    const npsRecentes = (npsRows ?? []).slice(0, 5)
+
     return ok({
       data: {
         atendimentosHoje: atendimentosHoje ?? 0,
@@ -114,6 +130,7 @@ export async function GET(req: NextRequest) {
         filaAtual: filaFormatted,
         topServicos,
         receitaUltimos7Dias,
+        nps: { media: npsMedia, total: npsTotal, recentes: npsRecentes },
       },
     })
   } catch (e: any) {

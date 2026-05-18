@@ -12,6 +12,39 @@
   --blue:   #4f8eff;
   --green:  #00e676;
   --purple: #a855f7;
+
+  /* Sidebar */
+  --sidebar-width: 240px;
+
+  /* Page transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+}
+
+/* Page fade-in */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-in { animation: page-in 0.35s var(--transition-base) both; }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Focus ring consistent */
+*:focus-visible {
+  outline: 2px solid rgba(0,212,255,0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 * { box-sizing: border-box; }

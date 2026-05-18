@@ -18,16 +18,20 @@ import {
   X,
   Menu,
   ChevronRight,
+  UserCheck,
+  Calendar,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/fila',         label: 'Fila',         icon: Clock },
+  { href: '/fila',         label: 'Fila ao Vivo', icon: Clock },
   { href: '/clientes',     label: 'Clientes',     icon: Users },
+  { href: '/agendamentos', label: 'Agendamentos', icon: Calendar },
   { href: '/financeiro',   label: 'Financeiro',   icon: DollarSign },
+  { href: '/equipe',       label: 'Equipe',       icon: UserCheck },
   { href: '/fidelidade',   label: 'Fidelidade',   icon: Star,           badge: 'PRO' },
   { href: '/whatsapp',     label: 'WhatsApp',     icon: MessageCircle,  badge: 'PRO' },
-  { href: '/financeiro',   label: 'Relatório',    icon: BarChart2 },
+  { href: '/relatorio',    label: 'Relatório',    icon: BarChart2 },
   { href: '/configuracoes',label: 'Configurações',icon: Settings },
 ]
 
