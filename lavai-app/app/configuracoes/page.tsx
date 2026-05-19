@@ -560,7 +560,7 @@ export default function ConfiguracoesPage() {
   return (
     <div className="flex min-h-screen" style={{ background: '#08090f' }}>
       <Sidebar />
-      <div className="flex-1 ml-[240px] flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-[240px] flex flex-col min-h-screen">
         <Header title="Configurações" subtitle="Gerencie as configurações do seu lava-jato" />
 
         <main className="flex-1 p-6">

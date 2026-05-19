@@ -92,9 +92,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── Demo mode: bypass auth when Supabase is not configured ──────────────────
+  // ── Demo mode ─────────────────────────────────────────────────────────────
+  // Em produção, só ativa com NEXT_PUBLIC_LAVAI_DEMO_ENABLED=true explícito.
+  // Em dev, ativa também se Supabase não estiver configurado.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-  const isDemoMode = !supabaseUrl || supabaseUrl.includes('seu-projeto') || supabaseUrl === ''
+  const demoFlag = (process.env.NEXT_PUBLIC_LAVAI_DEMO_ENABLED ?? '').toLowerCase() === 'true'
+  const isDemoMode =
+    process.env.NODE_ENV === 'production'
+      ? demoFlag
+      : demoFlag || !supabaseUrl || supabaseUrl.includes('seu-projeto')
 
   const protectedPaths = [
     '/dashboard', '/fila', '/financeiro', '/clientes', '/equipe',
@@ -118,30 +124,45 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // ── Supabase session refresh + auth guard ──────────────────────────────────
-  const supabase = createServerClient(
-    supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return request.cookies.get(name)?.value },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        set(name: string, value: string, options: any) {
-          request.cookies.set(name, value)
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value, ...options })
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        remove(name: string, options: any) {
-          request.cookies.set(name, '')
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value: '', ...options })
-        },
-      },
-    }
-  )
+  // ── API routes: skip Supabase session check ────────────────────────────────
+  // API routes have their own auth via requireAuth() — middleware só protege páginas.
+  if (pathname.startsWith('/api/')) {
+    Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v))
+    return response
+  }
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // ── Supabase session refresh + auth guard (pages only) ────────────────────
+  let session = null
+
+  try {
+    const supabase = createServerClient(
+      supabaseUrl,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) { return request.cookies.get(name)?.value },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          set(name: string, value: string, options: any) {
+            request.cookies.set(name, value)
+            response = NextResponse.next({ request: { headers: request.headers } })
+            response.cookies.set({ name, value, ...options })
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          remove(name: string, options: any) {
+            request.cookies.set(name, '')
+            response = NextResponse.next({ request: { headers: request.headers } })
+            response.cookies.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data } = await supabase.auth.getSession()
+    session = data.session
+  } catch (err) {
+    // Não deixar o middleware crashar — log e continua sem sessão
+    console.error('[middleware] getSession error:', err)
+  }
 
   if (isProtected && !session) {
     console.warn(

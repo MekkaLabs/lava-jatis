@@ -1,21 +1,18 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createHash } from 'crypto'
 import { verifyWebhook, AsaasWebhookEvent } from '@/lib/asaas'
 import { sendPaymentConfirmedEmail, sendPaymentOverdueEmail } from '@/lib/email'
 import { logger } from '@/lib/logger'
-
-// Service-role client — no user session available on webhooks
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('Supabase env vars missing')
-  return createClient(url, key)
-}
+import { createServiceSupabaseClient } from '@/lib/supabase-admin'
 
 type PlanoStatus = 'trial' | 'ativo' | 'inadimplente' | 'cancelado'
 
+// Sempre retorna 200 — Asaas tem retry agressivo em não-2xx,
+// e queremos evitar loop infinito mesmo em falhas internas.
+const OK = Response.json({ received: true }, { status: 200 })
+
 async function updateStatusBySubscription(subscriptionId: string, status: PlanoStatus) {
-  const supabase = getServiceSupabase()
+  const supabase = createServiceSupabaseClient()
   const { error } = await supabase
     .from('lava_jatos')
     .update({ plano_status: status })
@@ -25,10 +22,10 @@ async function updateStatusBySubscription(subscriptionId: string, status: PlanoS
 }
 
 async function getLavaJatoOwnerBySubscription(subscriptionId: string) {
-  const supabase = getServiceSupabase()
+  const supabase = createServiceSupabaseClient()
   const { data: lavaJato } = await supabase
     .from('lava_jatos')
-    .select('user_id, nome, nome_responsavel, plano, valor_plano')
+    .select('user_id, nome, plano')
     .eq('asaas_subscription_id', subscriptionId)
     .single()
 
@@ -38,11 +35,46 @@ async function getLavaJatoOwnerBySubscription(subscriptionId: string) {
   return user ? { ...lavaJato, email: user.email } : null
 }
 
+/**
+ * Marca o evento como processado. Retorna true se foi processado pela primeira vez,
+ * false se já existia (e portanto deve-se ignorar para evitar reprocessar).
+ */
+async function claimEvent(provider: string, eventId: string, payload: any): Promise<boolean> {
+  const supabase = createServiceSupabaseClient()
+  const { error } = await supabase
+    .from('webhook_events')
+    .insert({ provider, event_id: eventId, payload })
+
+  if (!error) return true
+
+  // Erro provavelmente é unique constraint = idempotência funcionando.
+  // Detectamos pelo código 23505 (unique_violation) ou pelo texto "duplicate".
+  const code = (error as any)?.code
+  const msg = (error as any)?.message ?? ''
+  if (code === '23505' || msg.toLowerCase().includes('duplicate')) {
+    logger.info('webhook.duplicate_ignored', { provider, eventId })
+    return false
+  }
+
+  // Outro erro — logamos mas seguimos processando (não queremos perder evento real
+  // por um erro de gravação no log de idempotência).
+  logger.error('webhook.claim_failed', error, { provider, eventId })
+  return true
+}
+
+function deriveEventId(event: AsaasWebhookEvent, rawBody: string): string {
+  // Preferimos o id explícito do Asaas. Fallback: hash do body + tipo de evento
+  // (mesmo body + mesmo tipo são tratados como duplicata — comportamento desejado).
+  if (event.id) return event.id
+  return createHash('sha256').update(`${event.event}|${rawBody}`).digest('hex')
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text()
 
-    // Always verify webhook signature — reject invalid ones
+    // Verifica assinatura. Falha = não processa, mas ainda retorna 200
+    // (evita Asaas em retry loop por config errada no nosso lado).
     const signature =
       req.headers.get('asaas-signature') ??
       req.headers.get('x-asaas-signature') ??
@@ -53,8 +85,7 @@ export async function POST(req: NextRequest) {
       logger.warn('webhook.invalid_signature', {
         ip: req.headers.get('x-forwarded-for') ?? 'unknown',
       })
-      // Return 200 to prevent Asaas infinite retries, but do NOT process
-      return Response.json({ received: false, reason: 'invalid_signature' }, { status: 200 })
+      return OK
     }
 
     let event: AsaasWebhookEvent
@@ -62,10 +93,18 @@ export async function POST(req: NextRequest) {
       event = JSON.parse(rawBody)
     } catch {
       logger.warn('webhook.invalid_json')
-      return Response.json({ received: false }, { status: 200 })
+      return OK
     }
 
-    logger.info('webhook.event', { event: event.event })
+    // ── Idempotência ────────────────────────────────────────────────────────
+    const eventId = deriveEventId(event, rawBody)
+    const firstTime = await claimEvent('asaas', eventId, event as any)
+    if (!firstTime) {
+      // Já processado — Asaas reenviou. Confirmamos recebimento.
+      return OK
+    }
+
+    logger.info('webhook.event', { event: event.event, eventId })
 
     switch (event.event) {
       case 'PAYMENT_CONFIRMED':
@@ -76,8 +115,8 @@ export async function POST(req: NextRequest) {
           try {
             const owner = await getLavaJatoOwnerBySubscription(payment.subscription)
             if (owner?.email) {
-              const nome = owner.nome_responsavel || owner.email.split('@')[0]
-              await sendPaymentConfirmedEmail(owner.email, nome, owner.plano || 'Pro', payment.value ?? owner.valor_plano ?? 0)
+              const nome = owner.nome || owner.email.split('@')[0]
+              await sendPaymentConfirmedEmail(owner.email, nome, owner.plano || 'Pro', payment.value ?? 0)
             }
           } catch (emailErr) {
             logger.error('webhook.email_confirmed', emailErr, { subscription: payment.subscription })
@@ -93,7 +132,7 @@ export async function POST(req: NextRequest) {
           try {
             const owner = await getLavaJatoOwnerBySubscription(payment.subscription)
             if (owner?.email) {
-              const nome = owner.nome_responsavel || owner.email.split('@')[0]
+              const nome = owner.nome || owner.email.split('@')[0]
               let diasAtraso = 1
               if (payment.dueDate) {
                 const due = new Date(payment.dueDate)
@@ -120,10 +159,11 @@ export async function POST(req: NextRequest) {
         logger.info('webhook.unhandled_event', { event: event.event })
     }
 
-    return Response.json({ received: true }, { status: 200 })
+    return OK
   } catch (err) {
     logger.error('webhook.fatal', err)
-    // Always 200 to prevent Asaas retries
-    return Response.json({ received: true }, { status: 200 })
+    // Ainda 200 — Asaas não deve fazer retry por erro nosso.
+    // Erro vai pro Sentry (task #12) quando instalado.
+    return OK
   }
 }

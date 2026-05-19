@@ -1,17 +1,20 @@
 import { NextRequest } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { error, ok } from '@/lib/api-helpers'
+import { createServiceSupabaseClient } from '@/lib/supabase-admin'
+import { verifyNps } from '@/lib/nps-signature'
 
 /**
- * GET /api/public/avaliar-info?at=<atendimento_id>
- * Returns minimal info for the NPS rating page (public).
+ * GET /api/public/avaliar-info?at=<atendimento_id>&sig=<hmac>
+ * Returns minimal info for the NPS rating page (public, HMAC-signed).
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const atId = searchParams.get('at')
+  const sig  = searchParams.get('sig')
   if (!atId) return error('at é obrigatório', 400)
+  if (!verifyNps(atId, sig)) return error('Link inválido ou expirado', 403)
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServiceSupabaseClient()
 
   const { data } = await supabase
     .from('atendimentos')

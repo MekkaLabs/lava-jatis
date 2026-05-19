@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { error, ok } from '@/lib/api-helpers'
+import { createServiceSupabaseClient } from '@/lib/supabase-admin'
 
 /**
  * GET /api/public/servicos?lj_id=<lava_jato_id>
@@ -11,12 +11,12 @@ export async function GET(req: NextRequest) {
   const ljId = searchParams.get('lj_id')
   if (!ljId) return error('lj_id é obrigatório', 400)
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServiceSupabaseClient()
 
   const [ljRes, svcRes] = await Promise.all([
     supabase
       .from('lava_jatos')
-      .select('nome, cidade, estado')
+      .select('nome, cidade, estado, horario_abertura, horario_fechamento')
       .eq('id', ljId)
       .single(),
     supabase
@@ -40,6 +40,8 @@ export async function GET(req: NextRequest) {
     lavaJatoNome: ljRes.data.nome,
     cidade:       ljRes.data.cidade ?? null,
     estado:       (ljRes.data as any).estado ?? null,
+    horarioAbertura:   (ljRes.data as any).horario_abertura   ?? '08:00',
+    horarioFechamento: (ljRes.data as any).horario_fechamento ?? '18:00',
     servicos,
   })
 }

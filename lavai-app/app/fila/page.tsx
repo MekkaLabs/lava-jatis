@@ -474,7 +474,7 @@ export default function FilaPage() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
       <Sidebar />
-      <main className="flex-1 ml-[240px] flex flex-col overflow-hidden">
+      <main className="flex-1 lg:ml-[240px] flex flex-col overflow-hidden">
         <Header
           title="Fila ao Vivo"
           subtitle={`${counts.aguardando + counts.em_andamento} veículo${(counts.aguardando + counts.em_andamento) !== 1 ? 's' : ''} ativo${(counts.aguardando + counts.em_andamento) !== 1 ? 's' : ''}`}

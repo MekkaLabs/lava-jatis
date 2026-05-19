@@ -5,6 +5,8 @@ import { NextRequest } from 'next/server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { buildRelatorioData } from '../pdf/route'
 
+export const dynamic = 'force-dynamic'
+
 function parseWeekParam(param: string | null): { year: number; week: number } {
   if (param && /^\d{4}-\d{1,2}$/.test(param)) {
     const [y, w] = param.split('-').map(Number)

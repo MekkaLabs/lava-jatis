@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabaseClient } from '@/lib/supabase-admin'
 import { sendMessage } from '@/lib/zapi'
 import { processMessage } from '@/lib/bot/conversation'
 import { ZAPIWebhookPayload } from '@/lib/zapi'
-
-// Service-role Supabase (bypasses RLS — safe for server-side webhook)
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
 
 function isWithinOperatingHours(inicio: string, fim: string): boolean {
   const now = new Date()
@@ -23,7 +15,7 @@ function isWithinOperatingHours(inicio: string, fim: string): boolean {
 }
 
 async function logMensagem(
-  supabase: ReturnType<typeof getSupabase>,
+  supabase: ReturnType<typeof createServiceSupabaseClient>,
   lavaJatoId: string,
   telefone: string,
   mensagem: string,
@@ -50,7 +42,7 @@ export async function POST(
   }
 
   try {
-    const supabase = getSupabase()
+    const supabase = createServiceSupabaseClient()
 
     // ── Load WhatsApp config for this lava-jato ──────────────────────────────
     const { data: config } = await supabase
@@ -100,6 +92,7 @@ export async function POST(
     // Use per-lava-jato Z-API credentials if available, otherwise use global env
     const instanceId = config?.zapi_instance_id ?? process.env.ZAPI_INSTANCE_ID
     const token = config?.zapi_token ?? process.env.ZAPI_TOKEN
+    const clientToken = config?.zapi_client_token ?? process.env.ZAPI_CLIENT_TOKEN
 
     if (!instanceId || !token) {
       return NextResponse.json({ error: 'Z-API not configured' }, { status: 503 })
@@ -122,7 +115,7 @@ export async function POST(
 
     if (isMediaMessage) {
       const reply = 'Desculpe, só consigo processar mensagens de texto por enquanto 😊'
-      await sendMessage(phone, reply)
+      await sendMessage(phone, reply, { instanceId, token, clientToken })
       await logMensagem(supabase, lavaJatoId, phone, reply, 'saida')
       return NextResponse.json({ ok: true })
     }
@@ -139,7 +132,7 @@ export async function POST(
       const offMsg =
         config.mensagem_fora_horario ??
         `Olá! Estamos fora do horário de atendimento. Funcionamos das ${horarioInicio} às ${horarioFim}.`
-      await sendMessage(phone, offMsg)
+      await sendMessage(phone, offMsg, { instanceId, token, clientToken })
       await logMensagem(supabase, lavaJatoId, phone, offMsg, 'saida')
       return NextResponse.json({ ok: true })
     }
@@ -149,7 +142,7 @@ export async function POST(
 
     // ── Send each response ───────────────────────────────────────────────────
     for (const response of responses) {
-      await sendMessage(phone, response)
+      await sendMessage(phone, response, { instanceId, token, clientToken })
       await logMensagem(supabase, lavaJatoId, phone, response, 'saida')
 
       // Small delay between messages to feel more natural

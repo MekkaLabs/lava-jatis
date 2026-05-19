@@ -370,7 +370,7 @@ export default function RelatorioPage() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
       <Sidebar />
-      <main className="flex-1 ml-[240px] flex flex-col overflow-auto text-white">
+      <main className="flex-1 lg:ml-[240px] flex flex-col overflow-auto text-white">
       <style>{`@media (max-width: 1023px) { main { margin-left: 0 !important; } }`}</style>
       {/* Page Header */}
       <div className="border-b border-[#1e2040] bg-[#0d0e1a]">

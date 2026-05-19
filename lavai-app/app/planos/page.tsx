@@ -284,7 +284,7 @@ export default function PlanosPage() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
       <Sidebar />
-      <main className="flex-1 ml-[240px] flex flex-col overflow-auto">
+      <main className="flex-1 lg:ml-[240px] flex flex-col overflow-auto">
       <style>{`@media (max-width: 1023px) { main { margin-left: 0 !important; } }`}</style>
       {/* Header */}
       <header

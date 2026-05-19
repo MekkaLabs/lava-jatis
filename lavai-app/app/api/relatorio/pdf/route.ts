@@ -8,6 +8,8 @@ import { requireAuth, error } from '@/lib/api-helpers'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { RelatorioPDF, RelatorioData } from '@/lib/pdf/RelatorioPDF'
 
+export const dynamic = 'force-dynamic'
+
 // ─── Week helpers ─────────────────────────────────────────────────────────────
 
 function getISOWeek(date: Date): number {
@@ -233,12 +235,12 @@ export async function GET(req: NextRequest) {
     const data = await buildRelatorioData(lavaJatoId, year, week)
 
     const buffer = await renderToBuffer(
-      createElement(RelatorioPDF, { data })
+      createElement(RelatorioPDF, { data }) as any
     )
 
     const weekLabel = `${year}-W${String(week).padStart(2, '0')}`
 
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

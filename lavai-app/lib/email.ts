@@ -8,9 +8,14 @@ import {
   WeeklyStats,
 } from './email-templates'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.FROM_EMAIL || 'no-reply@lavai.com.br'
 const FROM_NAME = 'LAVAI'
+
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) throw new Error('RESEND_API_KEY não configurada')
+  return new Resend(apiKey)
+}
 
 function from(): string {
   return `${FROM_NAME} <${FROM}>`
@@ -21,6 +26,7 @@ export async function sendWelcomeEmail(
   nome: string,
   nomeEstabelecimento: string
 ) {
+  const resend = getResend()
   const { data, error } = await resend.emails.send({
     from: from(),
     to,
@@ -42,6 +48,7 @@ export async function sendPaymentConfirmedEmail(
   plano: string,
   valor: number
 ) {
+  const resend = getResend()
   const { data, error } = await resend.emails.send({
     from: from(),
     to,
@@ -62,6 +69,7 @@ export async function sendPaymentOverdueEmail(
   nome: string,
   diasAtraso: number
 ) {
+  const resend = getResend()
   const { data, error } = await resend.emails.send({
     from: from(),
     to,
@@ -82,6 +90,7 @@ export async function sendWeeklyReportEmail(
   nome: string,
   stats: WeeklyStats
 ) {
+  const resend = getResend()
   const { data, error } = await resend.emails.send({
     from: from(),
     to,
@@ -98,6 +107,7 @@ export async function sendWeeklyReportEmail(
 }
 
 export async function sendPasswordResetEmail(to: string, resetLink: string) {
+  const resend = getResend()
   const { data, error } = await resend.emails.send({
     from: from(),
     to,

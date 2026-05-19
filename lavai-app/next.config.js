@@ -1,14 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Allow build to succeed even with TS type errors from missing packages.
-  // Real code-level errors (logic, missing exports) are still caught at dev time.
+  // Type errors fail the build. Bugs reais não devem passar invisíveis.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
-  // Suppress ESLint during build — linting runs separately in CI
+  // ESLint roda no build. Warnings não bloqueiam (only errors).
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
   // @react-pdf/renderer runs server-side only; mark canvas as external to avoid
@@ -32,7 +31,6 @@ const nextConfig = {
 
   // Experimental optimizations
   experimental: {
-    optimizeCss: true,
     turbo: {},
   },
 

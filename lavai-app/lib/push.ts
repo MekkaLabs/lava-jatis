@@ -1,17 +1,25 @@
 import webpush from 'web-push'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabaseClient } from '@/lib/supabase-admin'
 
-webpush.setVapidDetails(
-  'mailto:' + (process.env.FROM_EMAIL || 'no-reply@lavai.com.br'),
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+let vapidConfigured = false
 
-function getServiceSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+function ensureVapidConfigured() {
+  if (vapidConfigured) return
+
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const privateKey = process.env.VAPID_PRIVATE_KEY
+
+  if (!publicKey || !privateKey) {
+    throw new Error('VAPID keys not configured')
+  }
+
+  webpush.setVapidDetails(
+    'mailto:' + (process.env.FROM_EMAIL || 'no-reply@lavai.com.br'),
+    publicKey,
+    privateKey
   )
+
+  vapidConfigured = true
 }
 
 export interface PushPayload {
@@ -26,6 +34,7 @@ export async function sendPushNotification(
   payload: PushPayload
 ) {
   try {
+    ensureVapidConfigured()
     await webpush.sendNotification(
       subscription,
       JSON.stringify({
@@ -48,7 +57,7 @@ export async function sendPushNotification(
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload) {
-  const supabase = getServiceSupabase()
+  const supabase = createServiceSupabaseClient()
 
   const { data: subscriptions, error } = await supabase
     .from('push_subscriptions')
@@ -86,7 +95,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
 }
 
 export async function sendPushToLavaJato(lavaJatoId: string, payload: PushPayload) {
-  const supabase = getServiceSupabase()
+  const supabase = createServiceSupabaseClient()
 
   const { data: subscriptions, error } = await supabase
     .from('push_subscriptions')

@@ -11,6 +11,11 @@ import { requireAuth, rateLimit, error, ok, validateCPFCNPJ } from '@/lib/api-he
 import { logger } from '@/lib/logger'
 
 const ALLOWED_BILLING = ['CREDIT_CARD', 'PIX', 'BOLETO']
+const PLAN_DB_MAP = {
+  basico: 'starter',
+  profissional: 'pro',
+  enterprise: 'enterprise',
+} as const
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,6 +57,13 @@ export async function POST(req: NextRequest) {
       return error('Lava-jato não encontrado para este usuário', 404)
     }
 
+    if (
+      lavaJato.asaas_subscription_id &&
+      ['trial', 'ativo', 'inadimplente'].includes(lavaJato.plano_status ?? '')
+    ) {
+      return error('Já existe uma assinatura ativa ou pendente para este lava-jato', 409)
+    }
+
     // Create or reuse Asaas customer
     let asaasCustomerId: string = lavaJato.asaas_customer_id ?? ''
 
@@ -69,10 +81,15 @@ export async function POST(req: NextRequest) {
         asaasCustomerId = newCustomer.id
       }
 
-      await supabase
+      const { error: customerUpdateError } = await supabase
         .from('lava_jatos')
         .update({ asaas_customer_id: asaasCustomerId })
         .eq('id', lavaJato.id)
+
+      if (customerUpdateError) {
+        logger.error('subscription.customer_update', customerUpdateError, { userId, lavaJatoId: lavaJato.id })
+        return error('Erro ao salvar cliente de cobrança', 500)
+      }
     }
 
     // Create subscription
@@ -90,14 +107,20 @@ export async function POST(req: NextRequest) {
       externalReference: lavaJato.id,
     })
 
-    await supabase
+    const planoInterno = PLAN_DB_MAP[plano as keyof typeof PLAN_DB_MAP]
+    const { error: subscriptionUpdateError } = await supabase
       .from('lava_jatos')
       .update({
         asaas_subscription_id: subscription.id,
-        plano: plano as 'basico' | 'profissional' | 'enterprise',
+        plano: planoInterno,
         plano_status: 'trial',
       })
       .eq('id', lavaJato.id)
+
+    if (subscriptionUpdateError) {
+      logger.error('subscription.db_update', subscriptionUpdateError, { userId, lavaJatoId: lavaJato.id, subscriptionId: subscription.id })
+      return error('Assinatura criada no gateway, mas falhou ao salvar no app. Não prossiga sem revisar.', 502)
+    }
 
     logger.info('subscription.created', { userId, lavaJatoId: lavaJato.id, plano })
 

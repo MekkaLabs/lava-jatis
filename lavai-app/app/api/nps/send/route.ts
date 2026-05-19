@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
+import { signNps } from '@/lib/nps-signature'
 
 /**
  * POST /api/nps/send
@@ -47,7 +48,8 @@ export async function POST(req: NextRequest) {
     if (!zapiInstanceId || !zapiToken) return ok({ sent: false, reason: 'Z-API não configurado' })
 
     const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const avaliarUrl = `${appUrl}/avaliar?at=${atendimentoId}`
+    const sig       = signNps(atendimentoId)
+    const avaliarUrl = `${appUrl}/avaliar?at=${atendimentoId}&sig=${sig}`
 
     const nome = clienteNome.split(' ')[0]
     const msg  = [

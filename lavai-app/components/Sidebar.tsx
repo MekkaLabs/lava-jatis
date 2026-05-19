@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -43,16 +43,47 @@ interface SidebarProps {
   onMobileOpen?: (open: boolean) => void
 }
 
+interface MeResponse {
+  user: { id: string; email: string; nome: string }
+  lavaJato: {
+    id: string
+    nome: string
+    plano: string
+    planoLabel: string
+    planoStatus: string
+  } | null
+}
+
+function getInitials(nome: string): string {
+  const parts = nome.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return 'LJ'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [me, setMe] = useState<MeResponse | null>(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
+  }, [])
+
+  // Carrega user + lava_jato. Falha silenciosa: mostra fallback.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/me')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (!cancelled && data && !data.error) setMe(data) })
+      .catch(() => { /* mantém fallback */ })
+    return () => { cancelled = true }
   }, [])
 
   // Close mobile sidebar on route change
@@ -68,6 +99,21 @@ export default function Sidebar() {
   }, [])
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+
+  async function handleLogout() {
+    if (loggingOut) return
+    setLoggingOut(true)
+
+    try {
+      await fetch('/api/logout', { method: 'POST' })
+    } catch {
+      // Best effort; redirect anyway.
+    }
+
+    router.replace('/login')
+    router.refresh()
+    setLoggingOut(false)
+  }
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -110,7 +156,9 @@ export default function Sidebar() {
         border: '1px solid rgba(0,212,255,0.12)',
       }}>
         <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">Você está em</p>
-        <p className="text-sm font-semibold text-white truncate">Lava-Jato do Marcos</p>
+        <p className="text-sm font-semibold text-white truncate">
+          {me?.lavaJato?.nome ?? 'Seu Lava-Jato'}
+        </p>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" style={{ boxShadow: '0 0 6px #00e676' }} />
           <span className="text-xs text-green-400 font-medium">Aberto agora</span>
@@ -175,11 +223,15 @@ export default function Sidebar() {
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
             style={{ background: 'linear-gradient(135deg,#00d4ff,#4f8eff)', color: '#000' }}
           >
-            LJ
+            {me?.user?.nome ? getInitials(me.user.nome) : 'LJ'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white truncate">Marcos Silva</p>
-            <p className="text-[10px] text-gray-500 truncate">Plano Pro</p>
+            <p className="text-xs font-semibold text-white truncate">
+              {me?.user?.nome ?? 'Você'}
+            </p>
+            <p className="text-[10px] text-gray-500 truncate">
+              {me?.lavaJato?.planoLabel ?? 'Plano Starter'}
+            </p>
           </div>
         </div>
 
@@ -187,6 +239,7 @@ export default function Sidebar() {
         <button
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-400 transition-all duration-200 group"
           style={{ border: '1px solid transparent' }}
+          disabled={loggingOut}
           onMouseEnter={e => {
             (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,23,68,0.06)'
             ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,23,68,0.15)'
@@ -195,13 +248,10 @@ export default function Sidebar() {
             (e.currentTarget as HTMLButtonElement).style.background = ''
             ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'transparent'
           }}
-          onClick={() => {
-            // logout logic handled by auth provider
-            window.location.href = '/login'
-          }}
+          onClick={handleLogout}
         >
           <LogOut size={15} className="flex-shrink-0 transition-colors" />
-          <span className="font-medium">Sair</span>
+          <span className="font-medium">{loggingOut ? 'Saindo...' : 'Sair'}</span>
         </button>
       </div>
     </div>

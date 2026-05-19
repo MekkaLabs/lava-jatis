@@ -11,6 +11,7 @@ import { Star, CheckCircle2, Zap, MessageCircle } from 'lucide-react'
 function NPSContent() {
   const params = useSearchParams()
   const atId   = params.get('at')
+  const sig    = params.get('sig')
 
   const [nota, setNota]       = useState<number | null>(null)
   const [hover, setHover]     = useState<number | null>(null)
@@ -18,15 +19,24 @@ function NPSContent() {
   const [step, setStep]       = useState<'rating' | 'comment' | 'done' | 'error'>('rating')
   const [saving, setSaving]   = useState(false)
   const [lavaJatoNome, setLavaJatoNome] = useState('Lava-Jato')
+  const [linkValid, setLinkValid] = useState<boolean | null>(null)
 
-  // Load atendimento info
+  // Load atendimento info (valida HMAC server-side)
   useEffect(() => {
-    if (!atId) return
-    fetch(`/api/public/avaliar-info?at=${atId}`)
-      .then(r => r.json())
-      .then(d => { if (d.lavaJatoNome) setLavaJatoNome(d.lavaJatoNome) })
-      .catch(() => {/* silent */})
-  }, [atId])
+    if (!atId || !sig) { setLinkValid(false); return }
+    fetch(`/api/public/avaliar-info?at=${atId}&sig=${sig}`)
+      .then(async r => {
+        if (!r.ok) { setLinkValid(false); return null }
+        return r.json()
+      })
+      .then(d => {
+        if (d && d.lavaJatoNome) {
+          setLavaJatoNome(d.lavaJatoNome)
+          setLinkValid(true)
+        }
+      })
+      .catch(() => setLinkValid(false))
+  }, [atId, sig])
 
   const labels: Record<number, string> = {
     1: 'Péssimo 😞',
@@ -48,7 +58,7 @@ function NPSContent() {
       const res = await fetch('/api/public/nps-avaliar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ atendimentoId: atId, nota, comentario }),
+        body: JSON.stringify({ atendimentoId: atId, sig, nota, comentario }),
       })
       if (!res.ok) throw new Error('Erro')
       setStep('done')
@@ -59,12 +69,12 @@ function NPSContent() {
     }
   }
 
-  if (!atId) {
+  if (!atId || !sig || linkValid === false) {
     return (
       <div className="text-center py-16 px-4">
         <p className="text-4xl mb-3">🔍</p>
         <p className="text-white font-semibold text-lg mb-2">Link inválido</p>
-        <p className="text-gray-500 text-sm">Este link de avaliação não é válido.</p>
+        <p className="text-gray-500 text-sm">Este link de avaliação não é válido ou já expirou.</p>
       </div>
     )
   }

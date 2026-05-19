@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { sendMessage } from '@/lib/zapi'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabaseClient } from '@/lib/supabase-admin'
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,14 +20,18 @@ export async function POST(req: NextRequest) {
 
     const targetLavaJatoId = bodyLavaJatoId ?? lavaJatoId
 
-    // Send via Z-API
-    await sendMessage(phone, message)
+    const supabase = createServiceSupabaseClient()
+    const { data: config } = await supabase
+      .from('whatsapp_config')
+      .select('zapi_instance_id, zapi_token, zapi_client_token')
+      .eq('lava_jato_id', targetLavaJatoId)
+      .maybeSingle()
 
-    // Log to DB (service role to bypass RLS)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    await sendMessage(phone, message, {
+      instanceId: config?.zapi_instance_id ?? process.env.ZAPI_INSTANCE_ID ?? '',
+      token: config?.zapi_token ?? process.env.ZAPI_TOKEN ?? '',
+      clientToken: config?.zapi_client_token ?? process.env.ZAPI_CLIENT_TOKEN ?? '',
+    })
 
     await supabase.from('whatsapp_mensagens').insert({
       lava_jato_id: targetLavaJatoId,

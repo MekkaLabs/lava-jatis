@@ -4,6 +4,12 @@
 const ZAPI_BASE = () =>
   `https://api.z-api.io/instances/${process.env.ZAPI_INSTANCE_ID}/token/${process.env.ZAPI_TOKEN}`
 
+export interface ZAPICredentials {
+  instanceId: string
+  token: string
+  clientToken?: string
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ZAPIResponse {
@@ -71,13 +77,26 @@ export function verifyZAPIWebhook(clientToken: string, expectedToken: string): b
 
 // ─── Send helpers ──────────────────────────────────────────────────────────────
 
-async function zapiPost(path: string, body: unknown): Promise<ZAPIResponse> {
-  const url = `${ZAPI_BASE()}${path}`
+function getCredentials(credentials?: ZAPICredentials): ZAPICredentials {
+  const instanceId = credentials?.instanceId ?? process.env.ZAPI_INSTANCE_ID ?? ''
+  const token = credentials?.token ?? process.env.ZAPI_TOKEN ?? ''
+  const clientToken = credentials?.clientToken ?? process.env.ZAPI_CLIENT_TOKEN ?? ''
+
+  if (!instanceId || !token) {
+    throw new Error('Z-API credentials not configured')
+  }
+
+  return { instanceId, token, clientToken }
+}
+
+async function zapiPost(path: string, body: unknown, credentials?: ZAPICredentials): Promise<ZAPIResponse> {
+  const creds = getCredentials(credentials)
+  const url = `https://api.z-api.io/instances/${creds.instanceId}/token/${creds.token}${path}`
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Token': process.env.ZAPI_CLIENT_TOKEN || '',
+      'Client-Token': creds.clientToken || '',
     },
     body: JSON.stringify(body),
   })
@@ -93,12 +112,16 @@ async function zapiPost(path: string, body: unknown): Promise<ZAPIResponse> {
 /**
  * Send a plain text message.
  */
-export async function sendMessage(phone: string, message: string): Promise<void> {
+export async function sendMessage(
+  phone: string,
+  message: string,
+  credentials?: ZAPICredentials
+): Promise<void> {
   const formatted = formatPhone(phone)
   await zapiPost('/send-text', {
     phone: formatted,
     message,
-  })
+  }, credentials)
 }
 
 /**
@@ -107,7 +130,8 @@ export async function sendMessage(phone: string, message: string): Promise<void>
 export async function sendButtonMessage(
   phone: string,
   message: string,
-  buttons: Array<{ id: string; label: string }>
+  buttons: Array<{ id: string; label: string }>,
+  credentials?: ZAPICredentials
 ): Promise<void> {
   const formatted = formatPhone(phone)
   await zapiPost('/send-button-list', {
@@ -117,9 +141,9 @@ export async function sendButtonMessage(
       buttons: buttons.map((b) => ({
         id: b.id,
         label: b.label,
-      })),
+        })),
     },
-  })
+  }, credentials)
 }
 
 /**
@@ -128,7 +152,8 @@ export async function sendButtonMessage(
 export async function sendListMessage(
   phone: string,
   title: string,
-  items: Array<{ id: string; title: string; description: string }>
+  items: Array<{ id: string; title: string; description: string }>,
+  credentials?: ZAPICredentials
 ): Promise<void> {
   const formatted = formatPhone(phone)
   await zapiPost('/send-option-list', {
@@ -148,16 +173,20 @@ export async function sendListMessage(
         },
       ],
     },
-  })
+  }, credentials)
 }
 
 /**
  * Send a formatted text message (supports WhatsApp markdown: *bold*, _italic_, ~strike~).
  * Joins lines with \n.
  */
-export async function sendFormattedMessage(phone: string, lines: string[]): Promise<void> {
+export async function sendFormattedMessage(
+  phone: string,
+  lines: string[],
+  credentials?: ZAPICredentials
+): Promise<void> {
   const message = lines.join('\n')
-  await sendMessage(phone, message)
+  await sendMessage(phone, message, credentials)
 }
 
 /**

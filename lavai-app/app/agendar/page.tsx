@@ -15,15 +15,6 @@ interface Servico {
   duracao_minutos: number
 }
 
-function gerarSlots(): string[] {
-  const slots: string[] = []
-  for (let h = 8; h <= 17; h++) {
-    slots.push(`${String(h).padStart(2, '0')}:00`)
-    if (h < 17) slots.push(`${String(h).padStart(2, '0')}:30`)
-  }
-  return slots
-}
-
 function gerarDias(): { label: string; value: string }[] {
   const dias = []
   const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -38,8 +29,21 @@ function gerarDias(): { label: string; value: string }[] {
   return dias
 }
 
-const SLOTS = gerarSlots()
-const DIAS  = gerarDias()
+const DIAS = gerarDias()
+
+/** Formata número BR — (11) 99999-9999 ou (11) 9999-9999 */
+function formatPhoneBR(v: string): string {
+  const d = v.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 2)  return d.length ? `(${d}` : ''
+  if (d.length <= 6)  return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
+function isPhoneValid(v: string): boolean {
+  const d = v.replace(/\D/g, '')
+  return d.length === 10 || d.length === 11
+}
 
 function AgendarContent() {
   const params  = useSearchParams()
@@ -53,6 +57,8 @@ function AgendarContent() {
   const [selectedServico, setSelectedServico] = useState<Servico | null>(null)
   const [selectedDia, setSelectedDia]         = useState<string>(DIAS[0].value)
   const [selectedSlot, setSelectedSlot]       = useState<string | null>(null)
+  const [slots, setSlots]               = useState<string[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
   const [form, setForm]     = useState({ nome: '', telefone: '', placa: '', modelo: '' })
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
@@ -69,6 +75,23 @@ function AgendarContent() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [ljId])
+
+  // Carrega slots disponíveis sempre que troca dia ou serviço
+  useEffect(() => {
+    if (!ljId || !selectedServico || step !== 2) return
+    setLoadingSlots(true)
+    setSelectedSlot(null)
+    const params = new URLSearchParams({
+      lj_id: ljId,
+      data: selectedDia,
+      duracao: String(selectedServico.duracao_minutos ?? 30),
+    })
+    fetch(`/api/public/slots-disponiveis?${params.toString()}`)
+      .then(r => r.json())
+      .then(d => setSlots(Array.isArray(d.slots) ? d.slots : []))
+      .catch(() => setSlots([]))
+      .finally(() => setLoadingSlots(false))
+  }, [ljId, selectedDia, selectedServico, step])
 
   const formatBRL = (v: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
@@ -266,30 +289,42 @@ function AgendarContent() {
 
             {/* Time slots */}
             <p className="text-xs text-gray-400 font-medium mb-2 uppercase tracking-wide">Horário</p>
-            <div className="grid grid-cols-4 gap-2">
-              {SLOTS.map(slot => (
-                <button key={slot}
-                  onClick={() => { setSelectedSlot(slot); setStep(3) }}
-                  className="py-2.5 rounded-xl text-sm font-semibold transition-all"
-                  style={
-                    selectedSlot === slot
-                      ? { background: 'linear-gradient(135deg,#00d4ff,#4f8eff)', color: '#000' }
-                      : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)' }
-                  }
-                  onMouseEnter={e => {
-                    if (selectedSlot !== slot) {
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,212,255,0.35)'
+            {loadingSlots ? (
+              <div className="flex justify-center py-10">
+                <Loader2 size={22} className="animate-spin text-cyan-400" />
+              </div>
+            ) : slots.length === 0 ? (
+              <div className="text-center py-8 px-4 rounded-2xl"
+                style={{ background: 'rgba(255,214,0,0.06)', border: '1px solid rgba(255,214,0,0.18)' }}>
+                <p className="text-sm text-yellow-400 font-semibold mb-1">Sem horários disponíveis</p>
+                <p className="text-xs text-gray-400">Tente outro dia da semana.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {slots.map(slot => (
+                  <button key={slot}
+                    onClick={() => { setSelectedSlot(slot); setStep(3) }}
+                    className="py-2.5 rounded-xl text-sm font-semibold transition-all"
+                    style={
+                      selectedSlot === slot
+                        ? { background: 'linear-gradient(135deg,#00d4ff,#4f8eff)', color: '#000' }
+                        : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)' }
                     }
-                  }}
-                  onMouseLeave={e => {
-                    if (selectedSlot !== slot) {
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
-                    }
-                  }}>
-                  {slot}
-                </button>
-              ))}
-            </div>
+                    onMouseEnter={e => {
+                      if (selectedSlot !== slot) {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,212,255,0.35)'
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (selectedSlot !== slot) {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
+                      }
+                    }}>
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -327,21 +362,37 @@ function AgendarContent() {
                 { key: 'telefone', label: 'WhatsApp *',         placeholder: '(11) 99999-9999',    type: 'tel'  },
                 { key: 'placa',    label: 'Placa do veículo',   placeholder: 'ABC-1234',           type: 'text' },
                 { key: 'modelo',   label: 'Modelo do veículo',  placeholder: 'Chevrolet Onix',     type: 'text' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-xs text-gray-400 font-medium block mb-1.5">{f.label}</label>
-                  <input
-                    type={f.type}
-                    placeholder={f.placeholder}
-                    value={form[f.key as keyof typeof form]}
-                    onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                    className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 outline-none transition-all"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-                    onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(0,212,255,0.5)' }}
-                    onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.1)' }}
-                  />
-                </div>
-              ))}
+              ].map(f => {
+                const isPhone = f.key === 'telefone'
+                const value = form[f.key as keyof typeof form]
+                const showError = isPhone && value && !isPhoneValid(value)
+                return (
+                  <div key={f.key}>
+                    <label className="text-xs text-gray-400 font-medium block mb-1.5">{f.label}</label>
+                    <input
+                      type={f.type}
+                      inputMode={isPhone ? 'tel' : undefined}
+                      placeholder={f.placeholder}
+                      value={value}
+                      onChange={e => {
+                        const v = isPhone ? formatPhoneBR(e.target.value) : e.target.value
+                        setForm(prev => ({ ...prev, [f.key]: v }))
+                      }}
+                      maxLength={isPhone ? 16 : undefined}
+                      className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 outline-none transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${showError ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                      }}
+                      onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(0,212,255,0.5)' }}
+                      onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = showError ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)' }}
+                    />
+                    {showError && (
+                      <p className="text-xs text-red-400 mt-1">Digite um número válido (DDD + número)</p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             {error && (
@@ -353,7 +404,7 @@ function AgendarContent() {
 
             <button
               onClick={handleConfirm}
-              disabled={saving || !form.nome || !form.telefone}
+              disabled={saving || !form.nome || !isPhoneValid(form.telefone)}
               className="w-full mt-5 py-3.5 rounded-xl text-base font-bold text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #00d4ff, #4f8eff)' }}>
               {saving ? (

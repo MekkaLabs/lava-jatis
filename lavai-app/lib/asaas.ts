@@ -102,6 +102,7 @@ export interface AsaasPayment {
 }
 
 export interface AsaasWebhookEvent {
+  id?: string  // Asaas envia ID único por evento — usado para idempotência
   event:
     | 'PAYMENT_CONFIRMED'
     | 'PAYMENT_RECEIVED'
@@ -173,8 +174,8 @@ export async function verifyWebhook(
 ): Promise<boolean> {
   const token = process.env.ASAAS_WEBHOOK_TOKEN
   if (!token) {
-    console.warn('ASAAS_WEBHOOK_TOKEN não configurado — pulando verificação')
-    return true
+    console.warn('ASAAS_WEBHOOK_TOKEN não configurado')
+    return false
   }
   const expected = crypto
     .createHmac('sha256', token)

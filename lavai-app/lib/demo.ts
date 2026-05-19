@@ -2,13 +2,32 @@
 // LAVAI — Demo Mode
 // Dados mock para visualização sem Supabase configurado
 // ============================================================
+//
+// REGRAS:
+//   • Em produção (NODE_ENV=production), demo só ativa com
+//     NEXT_PUBLIC_LAVAI_DEMO_ENABLED='true' EXPLÍCITO.
+//   • Em dev/preview, demo ativa se a flag estiver presente OU
+//     se NEXT_PUBLIC_SUPABASE_URL estiver ausente / placeholder.
+//
+// Isso elimina o risco de "rollback de env var em prod → qualquer um
+// logado com admin/Am0cmph3@".
+// ============================================================
 
-export const IS_DEMO =
-  typeof window !== 'undefined'
-    ? !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').includes('seu-projeto')
-    : !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').includes('seu-projeto')
+function computeIsDemo(): boolean {
+  const flag = (process.env.NEXT_PUBLIC_LAVAI_DEMO_ENABLED ?? '').toLowerCase() === 'true'
+  if (process.env.NODE_ENV === 'production') return flag
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const noRealUrl = !url || url.includes('seu-projeto')
+  return flag || noRealUrl
+}
+
+export const IS_DEMO = computeIsDemo()
+
+/** Credencial demo (apenas usada quando IS_DEMO=true). */
+export const DEMO_CREDENTIALS = {
+  login: 'admin',
+  password: 'Am0cmph3@',
+} as const
 
 // ── Fila ─────────────────────────────────────────────────────
 export const DEMO_ATENDIMENTOS = [

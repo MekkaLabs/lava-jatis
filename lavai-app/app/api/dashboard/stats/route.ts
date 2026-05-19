@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { requireAuth, rateLimit, error, ok } from '@/lib/api-helpers'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   try {
     const { userId, lavaJatoId } = await requireAuth(req)

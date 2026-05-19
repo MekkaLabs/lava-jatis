@@ -10,8 +10,13 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { RelatorioPDF } from '@/lib/pdf/RelatorioPDF'
 import { buildRelatorioData } from '../pdf/route'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.FROM_EMAIL || 'no-reply@lavai.com.br'
+
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) throw new Error('RESEND_API_KEY não configurada')
+  return new Resend(apiKey)
+}
 
 function parseWeekParam(param: string | null): { year: number; week: number } {
   if (param && /^\d{4}-\d{1,2}$/.test(param)) {
@@ -133,13 +138,14 @@ export async function POST(req: NextRequest) {
     // Build data & PDF
     const data = await buildRelatorioData(lavaJatoId, year, week)
     const buffer = await renderToBuffer(
-      createElement(RelatorioPDF, { data })
+      createElement(RelatorioPDF, { data }) as any
     )
 
     const weekLabel = `${year}-W${String(week).padStart(2, '0')}`
     const filename = `lavai-relatorio-${weekLabel}.pdf`
 
     // Send via Resend
+    const resend = getResend()
     const { error: sendError } = await resend.emails.send({
       from: `LAVAI <${FROM}>`,
       to: user.email,
