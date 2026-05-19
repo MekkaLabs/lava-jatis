@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Download, TrendingUp, TrendingDown, Zap } from 'lucide-react'
 import { IS_DEMO } from '@/lib/demo'
+import Sidebar from '@/components/Sidebar'
 
 const DEMO_INSIGHTS_DATA = {
   hasRealAI: false,
@@ -236,9 +237,13 @@ export default function InsightsPage() {
   })()
 
   return (
+    <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
+      <Sidebar />
+      <main className="flex-1 ml-[240px] flex flex-col overflow-auto" style={{ color: 'white' }}>
+      <style>{`@media (max-width: 1023px) { main { margin-left: 0 !important; } }`}</style>
     <div
-      className="min-h-screen p-4 md:p-6 space-y-6"
-      style={{ background: '#08090f', color: 'white' }}
+      className="p-4 md:p-6 space-y-6"
+      style={{ color: 'white' }}
     >
       {/* Page Header */}
       <div className="flex items-start justify-between">
@@ -408,6 +413,8 @@ export default function InsightsPage() {
           </div>
         </div>
       )}
+    </div>
+    </main>
     </div>
   )
 }

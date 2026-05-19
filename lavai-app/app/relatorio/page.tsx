@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { IS_DEMO } from '@/lib/demo'
+import Sidebar from '@/components/Sidebar'
 
 const DEMO_KPIS = {
   atendimentos: 87,
@@ -367,7 +368,10 @@ export default function RelatorioPage() {
     selectedWeek.year === currentIso.year && selectedWeek.week === currentIso.week
 
   return (
-    <div className="min-h-screen bg-[#08090f] text-white">
+    <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
+      <Sidebar />
+      <main className="flex-1 ml-[240px] flex flex-col overflow-auto text-white">
+      <style>{`@media (max-width: 1023px) { main { margin-left: 0 !important; } }`}</style>
       {/* Page Header */}
       <div className="border-b border-[#1e2040] bg-[#0d0e1a]">
         <div className="max-w-5xl mx-auto px-6 py-6">
@@ -594,6 +598,7 @@ export default function RelatorioPage() {
           onDismiss={() => setToast(null)}
         />
       )}
+      </main>
     </div>
   )
 }

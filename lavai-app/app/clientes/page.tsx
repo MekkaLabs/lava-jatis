@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
-import { customers as mockCustomers } from '@/lib/mock-data'
+import { IS_DEMO, DEMO_CLIENTES } from '@/lib/demo'
 import { getInitials, getAvatarColor, formatCurrency } from '@/lib/utils'
 import {
   Search, Plus, Eye, Pencil, MessageCircle, ChevronLeft, ChevronRight,
@@ -11,6 +11,22 @@ import {
   Phone, Mail, Car, Calendar, Wallet, Award,
 } from 'lucide-react'
 import type { Customer } from '@/types'
+
+// Adapta DEMO_CLIENTES (demo.ts) para o tipo Customer usado nesta página
+const demoCustomers: Customer[] = DEMO_CLIENTES.map(c => ({
+  id: c.id,
+  name: c.nome,
+  phone: c.telefone ?? '',
+  email: c.email ?? undefined,
+  plate: c.placa,
+  carModel: '',
+  carColor: '',
+  totalVisits: c.total_atendimentos,
+  totalSpent: c.total_gasto,
+  lastVisit: c.ultima_visita.slice(0, 10),
+  loyaltyPoints: c.pontos,
+  createdAt: c.created_at.slice(0, 10),
+}))
 
 const PAGE_SIZE = 20
 type SortField = 'nome' | 'cadastro' | 'atendimentos'
@@ -242,7 +258,7 @@ export default function ClientesPage() {
   const [selected, setSelected] = useState<Customer | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [clientes, setClientes] = useState<Customer[]>(mockCustomers)
+  const [clientes, setClientes] = useState<Customer[]>(IS_DEMO ? demoCustomers : [])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -303,7 +319,7 @@ export default function ClientesPage() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
       <Sidebar />
-      <main className="flex-1 ml-[220px] flex flex-col overflow-hidden">
+      <main className="flex-1 ml-[240px] flex flex-col overflow-hidden">
         <Header
           title="Clientes"
           subtitle={`${clientes.length} clientes cadastrados`}

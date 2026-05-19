@@ -1,0 +1,5 @@
+// Este arquivo existe para compatibilidade. A rota real está em app/financeiro/page.tsx
+// Next.js App Router: mover para app/(dashboard)/financeiro/ causa conflito de rotas
+// TODO: remover este arquivo quando as páginas originais forem migradas
+
+export { default } from '@/app/financeiro/page'

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#08090f"/>
+  <!-- Grid lines decorativas -->
+  <line x1="0" y1="210" x2="1200" y2="210" stroke="#1a1a2e" stroke-width="1"/>
+  <line x1="0" y1="420" x2="1200" y2="420" stroke="#1a1a2e" stroke-width="1"/>
+  <line x1="300" y1="0" x2="300" y2="630" stroke="#1a1a2e" stroke-width="1"/>
+  <line x1="600" y1="0" x2="600" y2="630" stroke="#1a1a2e" stroke-width="1"/>
+  <line x1="900" y1="0" x2="900" y2="630" stroke="#1a1a2e" stroke-width="1"/>
+  <!-- Glow central -->
+  <ellipse cx="600" cy="315" rx="350" ry="200" fill="#00d4ff" opacity="0.04"/>
+  <!-- Logo icon -->
+  <rect x="510" y="195" width="80" height="80" rx="20" fill="url(#grad)"/>
+  <defs>
+    <linearGradient id="grad" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#4f8eff"/>
+    </linearGradient>
+  </defs>
+  <path d="M535 255 L550 215 L565 255 M541 242 H559" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- LAVAI text -->
+  <text x="600" y="340" font-family="Arial, sans-serif" font-size="72" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="-2">LAVAI</text>
+  <!-- Tagline -->
+  <text x="600" y="390" font-family="Arial, sans-serif" font-size="24" fill="#6b7280" text-anchor="middle">O sistema operacional do lava-jato moderno</text>
+  <!-- Pills de features -->
+  <rect x="310" y="430" width="160" height="36" rx="18" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="390" y="453" font-family="Arial, sans-serif" font-size="14" fill="#00d4ff" text-anchor="middle">Fila ao Vivo</text>
+  <rect x="490" y="430" width="200" height="36" rx="18" fill="rgba(0,230,118,0.1)" stroke="#00e676" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="590" y="453" font-family="Arial, sans-serif" font-size="14" fill="#00e676" text-anchor="middle">WhatsApp Bot</text>
+  <rect x="710" y="430" width="180" height="36" rx="18" fill="rgba(255,214,0,0.1)" stroke="#ffd600" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="800" y="453" font-family="Arial, sans-serif" font-size="14" fill="#ffd600" text-anchor="middle">Insights IA</text>
+</svg>

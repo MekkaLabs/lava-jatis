@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
+import { IS_DEMO, DEMO_RECEITA_7D, DEMO_DESPESAS } from '@/lib/demo'
 import { todayTransactions, todayExpenses, dayClosings } from '@/lib/mock-data'
 import { formatCurrency } from '@/lib/utils'
 import type { PaymentMethod } from '@/types'
@@ -48,16 +49,26 @@ function exportCSV(data: any[], filename: string) {
   URL.revokeObjectURL(url)
 }
 
-// Generate 30-day chart data
+// Generate 30-day chart data — seed determinística para evitar flicker a cada render
 function gen30Days() {
   const days = []
   const now = new Date()
+  // Valores base dos 7 dias de DEMO_RECEITA_7D repetidos ciclicamente para 30 dias
+  const baseReceita = IS_DEMO
+    ? DEMO_RECEITA_7D.map(d => d.receita)
+    : [1200, 980, 1560, 2100, 1870, 2640, 890]
+  const baseDespesas = IS_DEMO
+    ? DEMO_RECEITA_7D.map(d => d.despesas)
+    : [320, 180, 420, 280, 350, 190, 120]
+
   for (let i = 29; i >= 0; i--) {
     const d = new Date(now)
     d.setDate(d.getDate() - i)
     const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-    const receita = Math.round(800 + Math.random() * 1400)
-    const despesas = Math.round(200 + Math.random() * 400)
+    // Índice cíclico nos arrays base (determinístico, sem Math.random)
+    const idx = (29 - i) % baseReceita.length
+    const receita = baseReceita[idx]
+    const despesas = baseDespesas[idx]
     days.push({ label, receita, despesas, lucro: receita - despesas })
   }
   return days
@@ -73,16 +84,33 @@ const topServicos = [
   { nome: 'Cristalização', qtd: 3, receita: 900, pct: 5 },
 ]
 
-const totalRevenue = todayTransactions.reduce((s, t) => s + t.price, 0)
-const totalExpenses = todayExpenses.reduce((s, e) => s + e.amount, 0)
-const netProfit = totalRevenue - totalExpenses
-const avgTicket = Math.round(totalRevenue / (todayTransactions.length || 1))
+// KPIs — usa dados DEMO quando IS_DEMO, senão usa mock-data legado como fallback temporário
+const _totalRevenue = IS_DEMO
+  ? DEMO_RECEITA_7D.reduce((s, d) => s + d.receita, 0)
+  : todayTransactions.reduce((s, t) => s + t.price, 0)
 
-const paymentBreakdown = (['pix', 'cartao_credito', 'cartao_debito', 'dinheiro'] as PaymentMethod[]).map(method => {
-  const txs = todayTransactions.filter(t => t.paymentMethod === method)
-  const amount = txs.reduce((s, t) => s + t.price, 0)
-  return { method, count: txs.length, amount, pct: Math.round((amount / (totalRevenue || 1)) * 100) }
-}).filter(p => p.count > 0).sort((a, b) => b.amount - a.amount)
+const _totalExpenses = IS_DEMO
+  ? DEMO_DESPESAS.reduce((s, d) => s + d.valor, 0)
+  : todayExpenses.reduce((s, e) => s + e.amount, 0)
+
+const totalRevenue = _totalRevenue
+const totalExpenses = _totalExpenses
+const netProfit = totalRevenue - totalExpenses
+const avgTicket = IS_DEMO ? 130 : Math.round(totalRevenue / (todayTransactions.length || 1))
+
+// Breakdown de pagamento (estimativa demo)
+const paymentBreakdown = IS_DEMO
+  ? [
+      { method: 'pix' as PaymentMethod, count: 42, amount: Math.round(totalRevenue * 0.45), pct: 45 },
+      { method: 'cartao_debito' as PaymentMethod, count: 28, amount: Math.round(totalRevenue * 0.25), pct: 25 },
+      { method: 'cartao_credito' as PaymentMethod, count: 18, amount: Math.round(totalRevenue * 0.20), pct: 20 },
+      { method: 'dinheiro' as PaymentMethod, count: 12, amount: Math.round(totalRevenue * 0.10), pct: 10 },
+    ]
+  : (['pix', 'cartao_credito', 'cartao_debito', 'dinheiro'] as PaymentMethod[]).map(method => {
+      const txs = todayTransactions.filter(t => t.paymentMethod === method)
+      const amount = txs.reduce((s, t) => s + t.price, 0)
+      return { method, count: txs.length, amount, pct: Math.round((amount / (totalRevenue || 1)) * 100) }
+    }).filter(p => p.count > 0).sort((a, b) => b.amount - a.amount)
 
 // ── Nova Despesa Modal ────────────────────────────────────────
 interface NovaDespesaModalProps { onClose: () => void }
@@ -210,7 +238,7 @@ export default function FinanceiroPage() {
   return (
     <div className="flex min-h-screen" style={{ background: '#08090f' }}>
       <Sidebar />
-      <div className="flex-1 ml-[220px] flex flex-col min-h-screen">
+      <div className="flex-1 ml-[240px] flex flex-col min-h-screen">
         <Header title="Financeiro" subtitle="Análise financeira do seu lava-jato" />
 
         <main className="flex-1 p-6 space-y-6">

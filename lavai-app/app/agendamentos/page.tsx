@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
-import { customers } from '@/lib/mock-data'
+import { IS_DEMO, DEMO_CLIENTES, DEMO_AGENDAMENTOS } from '@/lib/demo'
 import { getInitials, getAvatarColor, formatCurrency } from '@/lib/utils'
 import {
   ChevronLeft, ChevronRight, Plus, X, Clock, User, Car, Check,
@@ -38,33 +38,57 @@ function getWeekStart(date: Date): Date {
   return d
 }
 
+// Converte DEMO_AGENDAMENTOS (de lib/demo.ts) para o tipo local Agendamento
+function demoToAgendamentos(): Agendamento[] {
+  return DEMO_AGENDAMENTOS.map(a => {
+    const dt = new Date(a.data_hora)
+    return {
+      id: a.id,
+      clienteNome: a.cliente_nome,
+      servico: a.servico_nome,
+      data: dt.toISOString().slice(0, 10),
+      hora: `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`,
+      duracao: 60,
+      funcionario: FUNCS[DEMO_CLIENTES.findIndex(c => c.nome === a.cliente_nome) % FUNCS.length] ?? FUNCS[0],
+      status: 'confirmado' as AgendStatus,
+      preco: a.preco_final,
+    }
+  })
+}
+
+// Para modo com banco real: gera agendamentos aleatórios com dados locais (placeholder até integração real)
 function genMockAgendamentos(weekStart: Date): Agendamento[] {
   const agds: Agendamento[] = []
   const hours = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00']
   const statuses: AgendStatus[] = ['confirmado', 'confirmado', 'confirmado', 'pendente', 'concluido']
+  // Usar DEMO_CLIENTES como base de nomes (seed determinística por nome)
+  const clienteNames = DEMO_CLIENTES.map(c => c.nome)
 
   for (let day = 0; day < 7; day++) {
     const d = new Date(weekStart)
     d.setDate(d.getDate() + day)
     const dateStr = d.toISOString().slice(0, 10)
-    const slotCount = day < 5 ? Math.floor(Math.random() * 5) + 3 : Math.floor(Math.random() * 3)
-    const usedHours = new Set<string>()
+    // Seed determinística baseada no dia para evitar valores aleatórios a cada render
+    const seed = d.getDate() + d.getMonth() * 31
+    const slotCount = day < 5 ? (seed % 3) + 3 : (seed % 2) + 1
+    const usedHourIdxs = new Set<number>()
 
     for (let s = 0; s < slotCount; s++) {
-      let hora = hours[Math.floor(Math.random() * hours.length)]
-      if (usedHours.has(hora)) continue
-      usedHours.add(hora)
-      const cliente = customers[Math.floor(Math.random() * customers.length)]
+      const hourIdx = (seed * (s + 1)) % hours.length
+      if (usedHourIdxs.has(hourIdx)) continue
+      usedHourIdxs.add(hourIdx)
+      const hora = hours[hourIdx]
+      const clienteIdx = (seed + s) % clienteNames.length
       agds.push({
         id: `ag-${dateStr}-${hora}`,
-        clienteNome: cliente.name,
-        servico: SERVICES[Math.floor(Math.random() * SERVICES.length)],
+        clienteNome: clienteNames[clienteIdx],
+        servico: SERVICES[(seed + s) % SERVICES.length],
         data: dateStr,
         hora,
-        duracao: [30, 60, 90, 120][Math.floor(Math.random() * 4)],
-        funcionario: FUNCS[Math.floor(Math.random() * FUNCS.length)],
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        preco: [60, 90, 120, 180, 250, 350][Math.floor(Math.random() * 6)],
+        duracao: [30, 60, 90, 120][(seed + s) % 4],
+        funcionario: FUNCS[(seed + s) % FUNCS.length],
+        status: statuses[(seed + s) % statuses.length],
+        preco: [60, 90, 120, 180, 250, 350][(seed + s) % 6],
       })
     }
   }
@@ -93,13 +117,13 @@ function NovoAgendamentoModal({ onClose, onSave, weekStart }: NovoModalProps) {
     hora: '09:00', funcionario: FUNCS[0],
   })
   const [saving, setSaving] = useState(false)
-  const [clientResults, setClientResults] = useState<typeof customers>([])
+  const [clientResults, setClientResults] = useState<typeof DEMO_CLIENTES>([])
   const [showResults, setShowResults] = useState(false)
 
   function searchClientes(q: string) {
     setForm(f => ({ ...f, clienteSearch: q, clienteNome: q }))
     if (q.length > 1) {
-      setClientResults(customers.filter(c => c.name.toLowerCase().includes(q.toLowerCase())).slice(0, 5))
+      setClientResults(DEMO_CLIENTES.filter(c => c.nome.toLowerCase().includes(q.toLowerCase())).slice(0, 5))
       setShowResults(true)
     } else {
       setShowResults(false)
@@ -151,14 +175,14 @@ function NovoAgendamentoModal({ onClose, onSave, weekStart }: NovoModalProps) {
               <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl overflow-hidden"
                 style={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.12)' }}>
                 {clientResults.map(c => (
-                  <button key={c.id} onClick={() => { setForm(f => ({ ...f, clienteSearch: c.name, clienteNome: c.name })); setShowResults(false) }}
+                  <button key={c.id} onClick={() => { setForm(f => ({ ...f, clienteSearch: c.nome, clienteNome: c.nome })); setShowResults(false) }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${getAvatarColor(c.name)}`}>
-                      {getInitials(c.name)}
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${getAvatarColor(c.nome)}`}>
+                      {getInitials(c.nome)}
                     </div>
                     <div>
-                      <p className="text-sm text-white">{c.name}</p>
-                      <p className="text-xs text-gray-500">{c.phone}</p>
+                      <p className="text-sm text-white">{c.nome}</p>
+                      <p className="text-xs text-gray-500">{c.telefone ?? ''}</p>
                     </div>
                   </button>
                 ))}
@@ -371,7 +395,12 @@ export default function AgendamentosPage() {
   const [showModal, setShowModal] = useState(false)
   const [extraAgds, setExtraAgds] = useState<Agendamento[]>([])
 
-  const baseAgds = useMemo(() => genMockAgendamentos(weekStart), [weekStart.toISOString()])
+  // Em demo mode usa DEMO_AGENDAMENTOS centralizados; fora do demo usa gerador com seed determinística
+  const baseAgds = useMemo(
+    () => IS_DEMO ? demoToAgendamentos() : genMockAgendamentos(weekStart),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weekStart.toISOString()]
+  )
   const agendamentos = [...baseAgds, ...extraAgds.filter(a => {
     const d = new Date(a.data)
     return d >= weekStart && d < new Date(weekStart.getTime() + 7 * 86400000)
@@ -400,7 +429,7 @@ export default function AgendamentosPage() {
   return (
     <div className="flex min-h-screen" style={{ background: '#08090f' }}>
       <Sidebar />
-      <div className="flex-1 ml-[220px] flex flex-col min-h-screen">
+      <div className="flex-1 ml-[240px] flex flex-col min-h-screen">
         <Header
           title="Agendamentos"
           subtitle={`${totalWeek} agendamentos esta semana`}

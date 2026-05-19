@@ -879,7 +879,7 @@ export default function FidelidadePage() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
       <Sidebar />
-      <main className="flex-1 ml-[220px] flex flex-col overflow-hidden">
+      <main className="flex-1 ml-[240px] flex flex-col overflow-hidden">
         <Header title="Fidelidade" subtitle="Programa de pontos e recompensas" />
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-6 py-6">

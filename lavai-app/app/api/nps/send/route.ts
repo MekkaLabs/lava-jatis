@@ -10,8 +10,12 @@ import { requireAuth, error, ok } from '@/lib/api-helpers'
  */
 export async function POST(req: NextRequest) {
   // Requires auth (called server-side with cookie forwarding)
-  const { lavaJatoId, error: authError } = await requireAuth(req)
-  if (authError) return authError
+  let lavaJatoId: string
+  try {
+    ;({ lavaJatoId } = await requireAuth(req))
+  } catch (r) {
+    return r as Response
+  }
 
   try {
     const { atendimentoId } = await req.json()

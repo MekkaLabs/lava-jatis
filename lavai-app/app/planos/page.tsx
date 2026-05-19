@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { IS_DEMO } from '@/lib/demo'
+import Sidebar from '@/components/Sidebar'
 import {
   ArrowLeft,
   Check,
@@ -281,7 +282,10 @@ export default function PlanosPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#08090f' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: '#08090f' }}>
+      <Sidebar />
+      <main className="flex-1 ml-[240px] flex flex-col overflow-auto">
+      <style>{`@media (max-width: 1023px) { main { margin-left: 0 !important; } }`}</style>
       {/* Header */}
       <header
         className="sticky top-0 z-30 px-5 py-4 flex items-center gap-4 border-b"
@@ -484,6 +488,7 @@ export default function PlanosPage() {
           onClose={handleSuccessClose}
         />
       )}
+      </main>
     </div>
   )
 }

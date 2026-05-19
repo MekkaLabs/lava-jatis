@@ -7,7 +7,8 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
-const GA_ID = 'G-LAVAI2024'
+// TODO: substituir pelo GA ID real quando disponível — ex: 'G-XXXXXXXXXX'
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? ''
 
 export const viewport: Viewport = {
   themeColor: '#08090f',
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
       'LAVAI — O sistema inteligente para lava-jatos. Gerencie filas, financeiro, equipe e fidelidade em um só lugar.',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-image.svg',
         width: 1200,
         height: 630,
         alt: 'LAVAI — Sistema para Lava-Jatos',
@@ -71,13 +72,13 @@ export const metadata: Metadata = {
     title: 'LAVAI — O Sistema Operacional do Lava-Jato Moderno',
     description:
       'Gerencie filas, financeiro, equipe e fidelidade em um só lugar. Aumente seu faturamento hoje.',
-    images: ['/og-image.png'],
+    images: ['/og-image.svg'],
     creator: '@lavai_br',
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
   },
   manifest: '/manifest.webmanifest',
   alternates: {

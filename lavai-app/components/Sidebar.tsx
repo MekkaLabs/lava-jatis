@@ -20,6 +20,8 @@ import {
   ChevronRight,
   UserCheck,
   Calendar,
+  Lightbulb,
+  CreditCard,
 } from 'lucide-react'
 
 const navItems = [
@@ -31,7 +33,9 @@ const navItems = [
   { href: '/equipe',       label: 'Equipe',       icon: UserCheck },
   { href: '/fidelidade',   label: 'Fidelidade',   icon: Star,           badge: 'PRO' },
   { href: '/whatsapp',     label: 'WhatsApp',     icon: MessageCircle,  badge: 'PRO' },
+  { href: '/insights',     label: 'Insights IA',  icon: Lightbulb,      badge: 'IA'  },
   { href: '/relatorio',    label: 'Relatório',    icon: BarChart2 },
+  { href: '/planos',       label: 'Planos',       icon: CreditCard },
   { href: '/configuracoes',label: 'Configurações',icon: Settings },
 ]
 
