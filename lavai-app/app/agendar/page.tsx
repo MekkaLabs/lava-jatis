@@ -61,6 +61,7 @@ function AgendarContent() {
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [form, setForm]     = useState({ nome: '', telefone: '', placa: '', modelo: '' })
   const [saving, setSaving] = useState(false)
+  const [consent, setConsent] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const [error, setError]   = useState<string | null>(null)
 
@@ -395,6 +396,22 @@ function AgendarContent() {
               })}
             </div>
 
+            {/* Consentimento LGPD */}
+            <label className="mt-5 flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={e => setConsent(e.target.checked)}
+                className="mt-0.5 w-5 h-5 rounded accent-cyan-400 cursor-pointer flex-shrink-0"
+              />
+              <span className="text-xs text-gray-400 leading-relaxed">
+                Concordo que meus dados (nome, telefone, placa) sejam usados para confirmar este
+                agendamento e me enviar avaliação via WhatsApp após o serviço. Posso solicitar
+                exclusão a qualquer momento. Veja a{' '}
+                <a href="/privacidade" target="_blank" className="text-cyan-400 hover:underline">Política de Privacidade</a>.
+              </span>
+            </label>
+
             {error && (
               <div className="mt-4 p-3 rounded-xl text-sm text-red-400"
                 style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -404,7 +421,7 @@ function AgendarContent() {
 
             <button
               onClick={handleConfirm}
-              disabled={saving || !form.nome || !isPhoneValid(form.telefone)}
+              disabled={saving || !form.nome || !isPhoneValid(form.telefone) || !consent}
               className="w-full mt-5 py-3.5 rounded-xl text-base font-bold text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #00d4ff, #4f8eff)' }}>
               {saving ? (

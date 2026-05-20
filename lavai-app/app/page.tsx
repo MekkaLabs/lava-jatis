@@ -350,9 +350,12 @@ export default function Home() {
             </div>
             <span className="text-sm text-gray-400">LAVAI © {new Date().getFullYear()}</span>
           </div>
-          <div className="flex items-center gap-6 text-xs text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-500 justify-center sm:justify-end">
             <Link href="/login" className="hover:text-white transition-colors">Entrar</Link>
             <Link href="/cadastro" className="hover:text-white transition-colors">Cadastro</Link>
+            <Link href="/privacidade" className="hover:text-white transition-colors">Privacidade</Link>
+            <Link href="/termos" className="hover:text-white transition-colors">Termos</Link>
+            <Link href="/lgpd/excluir" className="hover:text-white transition-colors">Excluir meus dados</Link>
             <a href="mailto:contato@lavai.com.br" className="hover:text-white transition-colors">Contato</a>
           </div>
         </div>

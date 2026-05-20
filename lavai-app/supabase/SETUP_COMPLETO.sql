@@ -391,6 +391,29 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 
 
 -- ============================================================
+-- SECTION 7B: LGPD — Solicitações de exclusão / acesso
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS solicitacoes_lgpd (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo text NOT NULL CHECK (tipo IN ('exclusao','acesso','correcao','portabilidade','revogacao')),
+  telefone text,
+  email text,
+  motivo text,
+  ip text,
+  user_agent text,
+  status text DEFAULT 'pendente' CHECK (status IN ('pendente','em_analise','concluida','rejeitada')),
+  observacao_interna text,
+  created_at timestamptz DEFAULT now(),
+  processed_at timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS idx_solicitacoes_lgpd_status   ON solicitacoes_lgpd(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_solicitacoes_lgpd_telefone ON solicitacoes_lgpd(telefone);
+CREATE INDEX IF NOT EXISTS idx_solicitacoes_lgpd_email    ON solicitacoes_lgpd(email);
+
+
+-- ============================================================
 -- SECTION 8: ROW LEVEL SECURITY
 -- ============================================================
 
@@ -411,6 +434,7 @@ ALTER TABLE whatsapp_config     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE nps_avaliacoes      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_subscriptions  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE webhook_events      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE solicitacoes_lgpd   ENABLE ROW LEVEL SECURITY;
 
 
 -- ============================================================
