@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,13 +34,13 @@ export async function POST(req: NextRequest) {
       .eq('subscription->>endpoint', endpoint)
 
     if (error) {
-      console.error('[push/unsubscribe] delete error:', error)
+      logger.error('push.unsubscribe.delete', error)
       return NextResponse.json({ error: 'Erro ao remover inscrição' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[push/unsubscribe] erro:', err)
+    logger.error('push.unsubscribe.error', err)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

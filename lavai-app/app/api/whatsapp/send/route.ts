@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { sendMessage } from '@/lib/zapi'
 import { createServiceSupabaseClient } from '@/lib/supabase-admin'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     return ok({ sent: true })
   } catch (e: any) {
     if (e instanceof Response) throw e
-    console.error('[whatsapp/send]', e)
-    return error('Erro ao enviar mensagem: ' + (e.message ?? 'desconhecido'), 500)
+    logger.error('whatsapp.send.error', e)
+    return error('Erro ao enviar mensagem. Tente novamente.', 500)
   }
 }

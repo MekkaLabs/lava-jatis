@@ -14,18 +14,15 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['business', 'productivity'],
     lang: 'pt-BR',
     icons: [
-      {
-        src: '/icon-192.png',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'maskable',
-      },
-      {
-        src: '/icon-512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any',
-      },
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+    shortcuts: [
+      { name: 'Fila ao vivo', short_name: 'Fila', url: '/fila' },
+      { name: 'Nova OS', short_name: 'Nova OS', url: '/fila?nova=1' },
+      { name: 'Clientes', short_name: 'Clientes', url: '/clientes' },
     ],
   }
 }

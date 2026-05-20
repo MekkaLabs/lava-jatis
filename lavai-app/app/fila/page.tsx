@@ -4,10 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
-import { DEMO_ATENDIMENTOS, DEMO_SERVICOS } from '@/lib/demo'
-
-const IS_DEMO = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').includes('seu-projeto')
+import { DEMO_ATENDIMENTOS, DEMO_SERVICOS, IS_DEMO } from '@/lib/demo'
 import {
   CheckCircle2, Zap, Trash2, Plus, Search, X, ChevronDown, Clock,
 } from 'lucide-react'
@@ -603,6 +600,7 @@ export default function FilaPage() {
                                 onClick={() => advance(item.id, item.status)}
                                 disabled={isLoading}
                                 title={item.status === 'aguardando' ? 'Iniciar' : 'Concluir'}
+                                aria-label={item.status === 'aguardando' ? `Iniciar atendimento de ${item.cliente_nome}` : `Concluir atendimento de ${item.cliente_nome}`}
                                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50"
                                 style={{ color: '#00d4ff', background: 'rgba(0,212,255,0.1)' }}
                               >
@@ -621,6 +619,7 @@ export default function FilaPage() {
                                 onClick={() => cancel(item.id)}
                                 disabled={isLoading}
                                 title="Cancelar"
+                                aria-label={`Cancelar atendimento de ${item.cliente_nome}`}
                                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
                                 style={{ background: 'rgba(255,82,82,0.08)' }}
                               >

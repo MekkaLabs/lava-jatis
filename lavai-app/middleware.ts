@@ -132,7 +132,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Supabase session refresh + auth guard (pages only) ────────────────────
-  let session = null
+  // Usa getUser() (revalida o JWT com o Auth server) em vez de getSession()
+  // (que confia no cookie sem revalidar) — evita cookie forjado passar o guard.
+  let user = null
 
   try {
     const supabase = createServerClient(
@@ -157,14 +159,14 @@ export async function middleware(request: NextRequest) {
       }
     )
 
-    const { data } = await supabase.auth.getSession()
-    session = data.session
+    const { data } = await supabase.auth.getUser()
+    user = data.user
   } catch (err) {
     // Não deixar o middleware crashar — log e continua sem sessão
-    console.error('[middleware] getSession error:', err)
+    console.error('[middleware] getUser error:', err)
   }
 
-  if (isProtected && !session) {
+  if (isProtected && !user) {
     console.warn(
       JSON.stringify({
         level: 'warn',
@@ -177,7 +179,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (session && (pathname === '/login' || pathname === '/cadastro')) {
+  if (user && (pathname === '/login' || pathname === '/cadastro')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

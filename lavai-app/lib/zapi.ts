@@ -1,6 +1,8 @@
 // Z-API WhatsApp Client
 // Docs: https://developer.z-api.io/
 
+import { fetchWithTimeout } from '@/lib/fetch-timeout'
+
 const ZAPI_BASE = () =>
   `https://api.z-api.io/instances/${process.env.ZAPI_INSTANCE_ID}/token/${process.env.ZAPI_TOKEN}`
 
@@ -92,7 +94,7 @@ function getCredentials(credentials?: ZAPICredentials): ZAPICredentials {
 async function zapiPost(path: string, body: unknown, credentials?: ZAPICredentials): Promise<ZAPIResponse> {
   const creds = getCredentials(credentials)
   const url = `https://api.z-api.io/instances/${creds.instanceId}/token/${creds.token}${path}`
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -199,7 +201,7 @@ export async function getInstanceStatus(): Promise<{
 }> {
   try {
     const url = `${ZAPI_BASE()}/status`
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: {
         'Client-Token': process.env.ZAPI_CLIENT_TOKEN || '',
       },

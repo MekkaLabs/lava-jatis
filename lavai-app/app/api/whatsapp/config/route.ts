@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (dbErr) {
-      console.error('[whatsapp/config POST]', dbErr)
+      logger.error('whatsapp.config.post', dbErr)
       return error('Erro ao salvar configuração', 500)
     }
 

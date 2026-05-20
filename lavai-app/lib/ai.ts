@@ -1,5 +1,7 @@
 // Anthropic Claude API client — uses native fetch to avoid SDK dependency
 
+import { fetchWithTimeout } from '@/lib/fetch-timeout'
+
 export interface InsightData {
   atendimentosUltimos30Dias: number
   receitaUltimos30Dias: number
@@ -63,7 +65,7 @@ async function callClaude(prompt: string, maxTokens: number): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured')
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -75,7 +77,7 @@ async function callClaude(prompt: string, maxTokens: number): Promise<string> {
       max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
     }),
-  })
+  }, 30_000) // IA pode demorar mais que o default de 15s
 
   if (!response.ok) {
     const err = await response.text()

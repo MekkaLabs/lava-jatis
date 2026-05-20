@@ -3,6 +3,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-admin'
 import { sendMessage } from '@/lib/zapi'
 import { processMessage } from '@/lib/bot/conversation'
 import { ZAPIWebhookPayload } from '@/lib/zapi'
+import { logger } from '@/lib/logger'
 
 function isWithinOperatingHours(inicio: string, fim: string): boolean {
   const now = new Date()
@@ -51,17 +52,21 @@ export async function POST(
       .eq('lava_jato_id', lavaJatoId)
       .single()
 
-    // ── Verify client token ──────────────────────────────────────────────────
-    if (config?.zapi_client_token) {
-      const incomingToken =
-        req.headers.get('client-token') ??
-        req.headers.get('Client-Token') ??
-        req.nextUrl.searchParams.get('clientToken') ??
-        ''
+    // ── Verify client token (fail-closed) ─────────────────────────────────────
+    // Sem config ou sem token configurado = rejeita. Caso contrário, qualquer um
+    // poderia POSTar mensagens falsas e criar atendimentos pelo bot.
+    if (!config || !config.zapi_client_token) {
+      return NextResponse.json({ error: 'Webhook não configurado' }, { status: 401 })
+    }
 
-      if (incomingToken !== config.zapi_client_token) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
+    const incomingToken =
+      req.headers.get('client-token') ??
+      req.headers.get('Client-Token') ??
+      req.nextUrl.searchParams.get('clientToken') ??
+      ''
+
+    if (incomingToken !== config.zapi_client_token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // ── Parse payload ────────────────────────────────────────────────────────
@@ -153,7 +158,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {
-    console.error('[webhook] error:', err)
+    logger.error('whatsapp.webhook.error', err)
     // Always return 200 to Z-API to avoid retries on our logic errors
     return NextResponse.json({ ok: true })
   }

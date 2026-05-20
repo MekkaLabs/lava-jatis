@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { SERVICOS_DEFAULTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
 
 // Regex helpers
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
     if (insertError || !lavaJato) {
       // Rollback: deletar usuário criado para não deixar órfão
       await admin.auth.admin.deleteUser(userId)
-      console.error('[cadastro] insert lava_jatos error:', insertError)
+      logger.error('cadastro.insert_lava_jatos', insertError)
       return NextResponse.json({ error: 'Erro ao criar lava-jato. Tente novamente.' }, { status: 500 })
     }
 
@@ -116,12 +117,12 @@ export async function POST(req: NextRequest) {
     }))
     const { error: servicosError } = await admin.from('servicos').insert(servicosRows)
     if (servicosError) {
-      console.warn('[cadastro] insert servicos defaults falhou (não-bloqueante):', servicosError.message)
+      logger.warn('cadastro.servicos_defaults_failed', { error: servicosError.message })
     }
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    console.error('[cadastro] unexpected error:', e)
+    logger.error('cadastro.unexpected', e)
     return NextResponse.json({ error: 'Erro interno. Tente novamente.' }, { status: 500 })
   }
 }

@@ -120,6 +120,53 @@ body::before {
   transform: translateY(-2px);
 }
 
+/* ── Page entrance transition (CSS-only, Safari-safe) ──────────────── */
+/* Mitigação F3 do pre-mortem: sem Framer Motion, evita janks no Safari iOS. */
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-in {
+  animation: page-fade-in 0.28s ease-out both;
+}
+
+/* Transição de ROTA: só opacity (não cria containing block, não quebra position:fixed) */
+@keyframes route-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.route-in {
+  animation: route-fade-in 0.22s ease-out;
+}
+
+/* ── Skeleton loading shimmer ──────────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.9; }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  border-radius: 10px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+/* ── Bottom sheet (mobile modal que sobe de baixo) ─────────────────── */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.sheet-up {
+  animation: sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Respeita preferência de menos movimento (acessibilidade) */
+@media (prefers-reduced-motion: reduce) {
+  .page-in, .route-in, .sheet-up, .live-dot, .skeleton { animation: none; }
+}
+
+/* Safe-area para iPhone com notch/home indicator (bottom tabs + FAB) */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
 /* Status badge base */
 .status-badge {
   display: inline-flex;

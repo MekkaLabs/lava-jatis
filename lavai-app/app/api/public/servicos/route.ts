@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server'
 import { error, ok } from '@/lib/api-helpers'
 import { createServiceSupabaseClient } from '@/lib/supabase-admin'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/public/servicos?lj_id=<lava_jato_id>
  * Public — returns available services + lava-jato name (no auth required).
  */
 export async function GET(req: NextRequest) {
+  try {
   const { searchParams } = new URL(req.url)
   const ljId = searchParams.get('lj_id')
   if (!ljId) return error('lj_id é obrigatório', 400)
@@ -44,4 +46,8 @@ export async function GET(req: NextRequest) {
     horarioFechamento: (ljRes.data as any).horario_fechamento ?? '18:00',
     servicos,
   })
+  } catch (e) {
+    logger.error('public.servicos.error', e)
+    return error('Erro ao buscar serviços', 500)
+  }
 }

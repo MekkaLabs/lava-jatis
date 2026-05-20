@@ -9,6 +9,7 @@ import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { RelatorioPDF } from '@/lib/pdf/RelatorioPDF'
 import { buildRelatorioData } from '../pdf/route'
+import { logger } from '@/lib/logger'
 
 const FROM = process.env.FROM_EMAIL || 'no-reply@lavai.com.br'
 
@@ -160,7 +161,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (sendError) {
-      console.error('[relatorio/email] resend error', sendError)
+      logger.error('relatorio.email.resend', sendError)
       return error('Falha ao enviar email', 500)
     }
 
@@ -170,7 +171,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (e: any) {
     if (e instanceof Response) return e
-    console.error('[relatorio/email]', e)
+    logger.error('relatorio.email', e)
     return error('Erro interno', 500)
   }
 }

@@ -1,5 +1,0 @@
-// Este arquivo existe para compatibilidade. A rota real está em app/configuracoes/page.tsx
-// Next.js App Router: mover para app/(dashboard)/configuracoes/ causa conflito de rotas
-// TODO: remover este arquivo quando as páginas originais forem migradas
-
-export { default } from '@/app/configuracoes/page'

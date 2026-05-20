@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { fetchWithTimeout } from '@/lib/fetch-timeout'
 
 const ASAAS_BASE =
   process.env.ASAAS_ENV === 'production'
@@ -18,7 +19,7 @@ async function asaasFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(`${ASAAS_BASE}${path}`, {
+  const response = await fetchWithTimeout(`${ASAAS_BASE}${path}`, {
     ...options,
     headers: {
       ...getHeaders(),

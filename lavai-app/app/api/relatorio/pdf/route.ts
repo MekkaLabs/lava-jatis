@@ -7,6 +7,7 @@ import { createElement } from 'react'
 import { requireAuth, error } from '@/lib/api-helpers'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { RelatorioPDF, RelatorioData } from '@/lib/pdf/RelatorioPDF'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -250,7 +251,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (e: any) {
     if (e instanceof Response) return e
-    console.error('[relatorio/pdf]', e)
+    logger.error('relatorio.pdf', e)
     return error('Erro ao gerar PDF', 500)
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { error, ok } from '@/lib/api-helpers'
 import { createServiceSupabaseClient } from '@/lib/supabase-admin'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/public/slots-disponiveis?lj_id=<id>&data=YYYY-MM-DD&duracao=<min>
@@ -10,6 +11,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-admin'
  * e os que já passaram (se a data for hoje).
  */
 export async function GET(req: NextRequest) {
+  try {
   const { searchParams } = new URL(req.url)
   const ljId    = searchParams.get('lj_id')
   const data    = searchParams.get('data')   // YYYY-MM-DD
@@ -96,4 +98,8 @@ export async function GET(req: NextRequest) {
     fechamento,
     isToday,
   })
+  } catch (e) {
+    logger.error('public.slots-disponiveis.error', e)
+    return error('Erro ao buscar horários', 500)
+  }
 }

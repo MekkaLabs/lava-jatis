@@ -1,5 +1,5 @@
-const CACHE_NAME = 'lavai-v1'
-const STATIC_ASSETS = ['/', '/dashboard', '/fila']
+const CACHE_NAME = 'lavai-v2'
+const STATIC_ASSETS = ['/', '/dashboard', '/fila', '/icon-192.png', '/icon-512.png']
 
 // Install: cache static assets
 self.addEventListener('install', (event) => {

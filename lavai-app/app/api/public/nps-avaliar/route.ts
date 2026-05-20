@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { error, ok, rateLimit } from '@/lib/api-helpers'
 import { createServiceSupabaseClient } from '@/lib/supabase-admin'
 import { verifyNps } from '@/lib/nps-signature'
+import { logger } from '@/lib/logger'
 
 const MAX_COMENTARIO_LEN = 1000
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ saved: true })
   } catch (e: any) {
-    console.error('[nps-avaliar]', e)
+    logger.error('nps.avaliar.error', e)
     return error('Erro ao salvar avaliação', 500)
   }
 }

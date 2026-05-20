@@ -5,6 +5,7 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (e: any) {
     if (e instanceof Response) return e
-    console.error('[relatorio/config GET]', e)
+    logger.error('relatorio.config.get', e)
     return error('Erro interno', 500)
   }
 }
@@ -59,14 +60,14 @@ export async function PATCH(req: NextRequest) {
       .eq('id', lavaJatoId)
 
     if (dbErr) {
-      console.error('[relatorio/config PATCH] db error', dbErr)
+      logger.error('relatorio.config.patch_db', dbErr)
       return error('Erro ao salvar configuração', 500)
     }
 
     return ok({ success: true, updated: updates })
   } catch (e: any) {
     if (e instanceof Response) return e
-    console.error('[relatorio/config PATCH]', e)
+    logger.error('relatorio.config.patch', e)
     return error('Erro interno', 500)
   }
 }

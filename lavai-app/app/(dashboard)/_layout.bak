@@ -1,5 +1,0 @@
-// Layout de grupo de rotas — passthrough sem wrapper
-// As páginas neste grupo incluem seu próprio Sidebar
-export default function GroupLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
-}

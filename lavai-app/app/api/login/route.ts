@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/login
@@ -18,11 +19,8 @@ function getEnv() {
 }
 
 export async function POST(req: NextRequest) {
-  console.log('[api/login] POST recebido')
-
   try {
     const { url, anon, cookieName } = getEnv()
-    console.log('[api/login] env OK — supabase URL:', url)
 
     let body: { email?: string; password?: string }
     try {
@@ -37,11 +35,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email e senha obrigatórios.' }, { status: 400 })
     }
 
-    console.log('[api/login] autenticando email:', email)
-
     // ── Chama o GoTrue diretamente ─────────────────────────────────────────
     const gotrue = `${url}/auth/v1/token?grant_type=password`
-    console.log('[api/login] chamando GoTrue:', gotrue)
 
     const authRes = await fetch(gotrue, {
       method: 'POST',
@@ -53,20 +48,18 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
     })
 
-    console.log('[api/login] GoTrue status:', authRes.status)
-
     let authBody: any
     try {
       authBody = await authRes.json()
     } catch {
-      const text = await authRes.text().catch(() => '(sem body)')
-      console.error('[api/login] GoTrue retornou não-JSON:', text)
+      await authRes.text().catch(() => '(sem body)')
+      logger.error('login.gotrue_non_json', new Error(`status ${authRes.status}`))
       return NextResponse.json({ error: 'Resposta inesperada do servidor de autenticação.' }, { status: 502 })
     }
 
     if (!authRes.ok) {
       const raw = authBody?.error_description ?? authBody?.msg ?? authBody?.message ?? authBody?.error ?? ''
-      console.warn('[api/login] GoTrue erro:', raw, '| body:', JSON.stringify(authBody))
+      logger.warn('login.gotrue_error', { status: authRes.status, raw })
 
       if (
         raw.toLowerCase().includes('invalid login') ||
@@ -83,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     // authBody = { access_token, refresh_token, expires_in, token_type, user, ... }
-    console.log('[api/login] auth OK — user:', authBody?.user?.email)
+    logger.info('login.success', { userId: authBody?.user?.id })
 
     const response = NextResponse.json({ ok: true })
     const maxAge   = authBody.expires_in ?? 3600
@@ -101,7 +94,7 @@ export async function POST(req: NextRequest) {
     return response
 
   } catch (e: any) {
-    console.error('[api/login] ERRO CRÍTICO:', e?.message, e?.stack)
-    return NextResponse.json({ error: `Erro interno: ${e?.message ?? 'desconhecido'}` }, { status: 500 })
+    logger.error('login.fatal', e)
+    return NextResponse.json({ error: 'Erro interno. Tente novamente.' }, { status: 500 })
   }
 }

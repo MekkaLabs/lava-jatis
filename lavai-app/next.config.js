@@ -36,6 +36,27 @@ const nextConfig = {
 
   // Security + performance headers
   async headers() {
+    // CSP — bloqueia XSS via script externo, mas precisa permitir Supabase realtime,
+    // Cloudflare Turnstile, GA, DiceBear, Next.js inline runtime e fontes do Google.
+    // 'unsafe-inline'/'unsafe-eval' em scripts são necessários pro Next.js client runtime.
+    // TODO futuro: substituir por nonce-based CSP.
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://challenges.cloudflare.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://api.dicebear.com https://www.google-analytics.com https://www.googletagmanager.com",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://challenges.cloudflare.com",
+      "frame-src 'self' https://challenges.cloudflare.com",
+      "worker-src 'self' blob:",
+      "manifest-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests",
+    ].join('; ')
+
     return [
       {
         // Apply to all routes
@@ -43,7 +64,13 @@ const nextConfig = {
         headers: [
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Content-Security-Policy', value: csp },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'same-site' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
         ],
       },
       {

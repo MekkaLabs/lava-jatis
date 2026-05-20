@@ -4,6 +4,7 @@
 import { NextRequest } from 'next/server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { buildRelatorioData } from '../pdf/route'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (e: any) {
     if (e instanceof Response) return e
-    console.error('[relatorio/preview]', e)
+    logger.error('relatorio.preview', e)
     return error('Erro interno', 500)
   }
 }

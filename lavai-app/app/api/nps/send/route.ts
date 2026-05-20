@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { requireAuth, error, ok } from '@/lib/api-helpers'
 import { signNps } from '@/lib/nps-signature'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/nps/send
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     const result = await zapiRes.json().catch(() => ({}))
     return ok({ sent: zapiRes.ok, result })
   } catch (e: any) {
-    console.error('[nps/send]', e)
+    logger.error('nps.send.error', e)
     return error('Erro ao enviar NPS', 500)
   }
 }

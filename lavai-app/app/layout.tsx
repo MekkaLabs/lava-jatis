@@ -16,6 +16,10 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? ''
 export const viewport: Viewport = {
   themeColor: '#08090f',
   colorScheme: 'dark',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover', // usa toda a tela em iPhones com notch (safe-area)
+  // sem maximumScale: permite pinch-zoom (acessibilidade WCAG 1.4.4)
 }
 
 export const metadata: Metadata = {
@@ -81,7 +85,12 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'LAVAI',
+    statusBarStyle: 'black-translucent', // status bar transparente sobre o app dark
   },
   manifest: '/manifest.webmanifest',
   alternates: {

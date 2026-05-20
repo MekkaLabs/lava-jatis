@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { error, ok, rateLimit } from '@/lib/api-helpers'
 import { createServiceSupabaseClient } from '@/lib/supabase-admin'
+import { logger } from '@/lib/logger'
 
 // LGPD Art. 18 — direito de exclusão (eliminação).
 // Endpoint público que registra solicitação de exclusão de dados.
@@ -47,8 +48,9 @@ export async function POST(req: NextRequest) {
       })
 
     if (insertErr) {
-      // Fallback: log estruturado pra ainda registrar mesmo se tabela faltar
-      console.warn('[lgpd/excluir] insert falhou — registrando em log:', {
+      // Fallback: log estruturado pra ainda registrar mesmo se tabela faltar.
+      // logger mascara telefone/email automaticamente (PII redaction).
+      logger.warn('lgpd.excluir.insert_fallback', {
         tipo: 'exclusao',
         telefone: telefoneRaw,
         email,
@@ -64,7 +66,7 @@ export async function POST(req: NextRequest) {
         'Recebemos sua solicitação. Vamos analisar e responder em até 15 dias úteis no canal informado.',
     })
   } catch (e: any) {
-    console.error('[lgpd/excluir]', e)
+    logger.error('lgpd.excluir.error', e)
     return error('Erro ao registrar solicitação. Tente novamente.', 500)
   }
 }

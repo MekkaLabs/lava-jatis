@@ -3,6 +3,8 @@
 
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { IS_DEMO } from '@/lib/demo'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,18 +14,9 @@ const PLAN_LABELS: Record<string, string> = {
   enterprise: 'Plano Enterprise',
 }
 
-function isDemo(): boolean {
-  const enabled = process.env.LAVAI_DEMO_ENABLED === 'true'
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-  const noUrl = !url || url.includes('seu-projeto')
-  // Em produção, demo só com flag explícita
-  if (process.env.NODE_ENV === 'production') return enabled
-  return enabled || noUrl
-}
-
 export async function GET() {
-  // Demo mode — devolve fallback sem tocar no Supabase
-  if (isDemo()) {
+  // Demo mode — devolve fallback sem tocar no Supabase (fonte única: lib/demo)
+  if (IS_DEMO) {
     return NextResponse.json({
       user: { id: 'demo', email: 'demo@lavai.com.br', nome: 'Modo Demo' },
       lavaJato: {
@@ -72,7 +65,7 @@ export async function GET() {
         : null,
     })
   } catch (e: any) {
-    console.error('[/api/me] error:', e?.message ?? e)
+    logger.error('me.error', e)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
