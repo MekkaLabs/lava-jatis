@@ -330,6 +330,7 @@ export default function FinanceiroPage() {
                 <h3 className="text-sm font-bold text-white">Top Serviços</h3>
                 <span className="text-xs text-gray-500">Este mês</span>
               </div>
+              <div className="table-scroll">
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -364,6 +365,7 @@ export default function FinanceiroPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Formas de pagamento */}

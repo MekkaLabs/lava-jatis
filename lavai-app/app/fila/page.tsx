@@ -517,6 +517,7 @@ export default function FilaPage() {
                 <p className="text-gray-500 text-sm">Carregando fila...</p>
               </div>
             ) : (
+              <div className="table-scroll">
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -633,6 +634,7 @@ export default function FilaPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
 
             {!loading && filtered.length === 0 && (

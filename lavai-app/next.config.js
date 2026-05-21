@@ -54,7 +54,8 @@ const nextConfig = {
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-      "upgrade-insecure-requests",
+      // NOTA: 'upgrade-insecure-requests' removido — quebrava acesso via HTTP
+      // (IP local / dev). Em produção o HTTPS é garantido pelo Vercel + HSTS.
     ].join('; ')
 
     return [

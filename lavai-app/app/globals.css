@@ -167,6 +167,28 @@ body::before {
 /* Safe-area para iPhone com notch/home indicator (bottom tabs + FAB) */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
+/* ════════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT FIXES (< lg) — bottom tabs, viewport height, tabelas
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  /* (1) Conteúdo das páginas internas não fica escondido atrás das bottom
+     tabs fixas (h-16 = 4rem) nem do home indicator. Mira o scroll container
+     padrão: <main> ... <div class="...overflow-y-auto"> filho direto. */
+  main > .overflow-y-auto,
+  main > .overflow-auto {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom) + 1rem) !important;
+  }
+
+  /* (3) Altura real do viewport: 100dvh exclui a barra de URL do browser
+     que aparece/some (evita conteúdo "pulando" e corte no rodapé). */
+  .h-screen { height: 100dvh; }
+}
+
+/* (2) Wrapper de scroll horizontal pra tabelas (aplicado com .table-scroll no
+   JSX). Mantém a <table> como table (colunas alinhadas) e rola só ela.
+   Vale em todos os breakpoints — overflow-x:auto não afeta desktop. */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 /* Status badge base */
 .status-badge {
   display: inline-flex;

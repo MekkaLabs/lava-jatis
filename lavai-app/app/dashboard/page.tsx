@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
+import { IS_DEMO } from '@/lib/demo'
 import { Car, DollarSign, Users, Clock, Star } from 'lucide-react'
 import DashboardHeader from './components/DashboardHeader'
 import MetricCard from './components/MetricCard'
@@ -53,9 +54,10 @@ function getDemoData() {
 }
 
 async function getDashboardData() {
-  // Demo mode: Supabase not configured
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-  if (!supabaseUrl || supabaseUrl.includes('seu-projeto')) {
+  // Demo mode: usa a MESMA detecção do middleware/login (flag), não placeholder.
+  // Sem isso, com SUPABASE_URL real + cookie demo, o redirect('/login') abaixo
+  // entrava em loop com o middleware (dashboard piscando).
+  if (IS_DEMO) {
     return getDemoData()
   }
 

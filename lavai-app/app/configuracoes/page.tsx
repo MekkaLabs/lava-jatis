@@ -205,6 +205,7 @@ function PlanoTab() {
         <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <h3 className="text-sm font-bold text-white">Histórico de Faturas</h3>
         </div>
+        <div className="table-scroll">
         <table className="w-full">
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -231,6 +232,7 @@ function PlanoTab() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Cancel plan */}

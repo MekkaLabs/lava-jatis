@@ -1,83 +1,26 @@
-const CACHE_NAME = 'lavai-v2'
-const STATIC_ASSETS = ['/', '/dashboard', '/fila', '/icon-192.png', '/icon-512.png']
+// LAVAI Service Worker — v3 (SAFE / no-cache)
+// ⚠️ Versões anteriores (v1/v2) usavam cache-first para HTML/CSS/JS, o que
+// servia assets antigos misturados com builds novos → "não abre / design zuado"
+// no celular. Esta versão NÃO intercepta fetch (tudo vem direto da rede) e
+// LIMPA todos os caches antigos. Mantém apenas push notifications.
 
-// Install: cache static assets
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        // Don't fail install if caching individual pages fails
-        console.warn('[SW] Failed to cache some static assets:', err)
-      })
-    })
-  )
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
-// Activate: clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
-  )
-  self.clients.claim()
-})
-
-// Fetch: cache-first for static assets, network-first for API
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url)
-
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return
-
-  // Network-first for API routes and auth
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({ error: 'Offline' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      })
-    )
-    return
-  }
-
-  // Cache-first for static assets (JS, CSS, images, fonts)
-  if (
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff|woff2|ttf)$/)
-  ) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return (
-          cached ||
-          fetch(event.request).then((response) => {
-            const clone = response.clone()
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
-            return response
-          })
-        )
-      })
-    )
-    return
-  }
-
-  // Network-first for HTML pages with cache fallback
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
-        return response
-      })
-      .catch(() => caches.match(event.request))
+    (async () => {
+      // Apaga TODOS os caches antigos (v1, v2, etc) — elimina assets quebrados
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k)))
+      await self.clients.claim()
+    })()
   )
 })
+
+// SEM listener de 'fetch': o navegador busca tudo direto da rede.
+// Zero risco de servir cache desatualizado. (Offline desativado por ora.)
 
 // Push: handle incoming push notifications
 self.addEventListener('push', (event) => {
@@ -119,14 +62,12 @@ self.addEventListener('notificationclick', (event) => {
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
-        // Focus existing window if available
         for (const client of windowClients) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.navigate(targetUrl)
             return client.focus()
           }
         }
-        // Open new window
         if (clients.openWindow) {
           return clients.openWindow(targetUrl)
         }

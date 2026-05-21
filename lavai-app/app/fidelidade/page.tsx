@@ -447,6 +447,7 @@ function ClientesTab({ data, resgates, onRefresh }: { data: PontosCliente[]; res
             <p className="text-xs mt-1">Pontos são concedidos automaticamente ao concluir atendimentos.</p>
           </div>
         ) : (
+          <div className="table-scroll">
           <table className="w-full">
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -531,6 +532,7 @@ function ClientesTab({ data, resgates, onRefresh }: { data: PontosCliente[]; res
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

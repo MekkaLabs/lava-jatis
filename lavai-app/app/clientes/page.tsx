@@ -350,6 +350,7 @@ export default function ClientesPage() {
 
             <div className="rounded-2xl overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="table-scroll">
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -422,6 +423,7 @@ export default function ClientesPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
 
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3"
