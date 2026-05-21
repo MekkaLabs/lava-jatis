@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, Search, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 interface HeaderProps {
   title: string
@@ -10,10 +10,9 @@ interface HeaderProps {
     label: string
     onClick: () => void
   }
-  unreadCount?: number
 }
 
-export default function Header({ title, subtitle, action, unreadCount = 3 }: HeaderProps) {
+export default function Header({ title, subtitle, action }: HeaderProps) {
   const [timeStr, setTimeStr] = useState('')
   const [dateStr, setDateStr] = useState('')
 
@@ -65,37 +64,9 @@ export default function Header({ title, subtitle, action, unreadCount = 3 }: Hea
           <span className="text-xs font-mono font-semibold text-cyan-400">{timeStr}</span>
         </div>
 
-        {/* Search */}
-        <button
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
-          aria-label="Buscar"
-        >
-          <Search size={15} />
-        </button>
-
-        {/* Notifications */}
-        <button
-          className="relative w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
-          aria-label="Notificações"
-        >
-          <Bell size={15} />
-          {unreadCount > 0 && (
-            <span
-              className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-[9px] font-bold text-black leading-none"
-              style={{
-                minWidth: '16px',
-                height: '16px',
-                padding: '0 3px',
-                background: '#00d4ff',
-                boxShadow: '0 0 8px rgba(0,212,255,0.6)',
-              }}
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
+        {/* Busca e notificações removidas por ora — não havia funcionalidade
+            (botões sem ação). Páginas têm busca própria. TODO: busca global +
+            central de notificações reais quando o backend existir. */}
 
         {/* CTA button */}
         {action && (

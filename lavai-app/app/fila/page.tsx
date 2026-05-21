@@ -517,7 +517,9 @@ export default function FilaPage() {
                 <p className="text-gray-500 text-sm">Carregando fila...</p>
               </div>
             ) : (
-              <div className="table-scroll">
+              <>
+              {/* Tabela — desktop apenas */}
+              <div className="table-scroll hidden lg:block">
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -635,6 +637,92 @@ export default function FilaPage() {
                 </tbody>
               </table>
               </div>
+
+              {/* Cards — mobile apenas */}
+              <div className="lg:hidden space-y-2.5">
+                {filtered.map((item) => {
+                  const sc = statusConfig[item.status]
+                  const isLoading = actionLoading === item.id
+                  const veiculo = [item.placa, item.modelo, item.cor].filter(Boolean).join(' · ')
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl p-4"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                    >
+                      {/* Topo: cliente + status */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 text-white"
+                            style={{ background: 'rgba(0,212,255,0.15)' }}
+                          >
+                            {getInitials(item.cliente_nome)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[15px] font-semibold text-white truncate">{item.cliente_nome}</p>
+                            {veiculo && <p className="text-xs text-gray-500 font-mono truncate">{veiculo}</p>}
+                          </div>
+                        </div>
+                        <span
+                          className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
+                          style={{ color: sc.color, background: sc.bg }}
+                        >
+                          {sc.label}
+                        </span>
+                      </div>
+
+                      {/* Meio: serviço + valor + tempo */}
+                      <div className="flex items-center justify-between gap-3 mb-3 text-sm">
+                        <span className="text-gray-300 truncate">{item.servico_nome ?? '—'}</span>
+                        <span className="font-semibold text-green-400 flex-shrink-0">
+                          {item.preco_final ? formatCurrency(item.preco_final) : '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
+                        <Clock size={12} />
+                        <span>chegou {new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · espera {getWaitTime(item.created_at)}</span>
+                      </div>
+
+                      {/* Ações: botões grandes (toque ≥44px) */}
+                      {item.status !== 'concluido' && item.status !== 'cancelado' && (
+                        <div className="flex items-center gap-2">
+                          {(item.status === 'aguardando' || item.status === 'em_andamento') && (
+                            <button
+                              onClick={() => advance(item.id, item.status)}
+                              disabled={isLoading}
+                              aria-label={item.status === 'aguardando' ? `Iniciar atendimento de ${item.cliente_nome}` : `Concluir atendimento de ${item.cliente_nome}`}
+                              className="flex-1 h-11 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold transition-colors disabled:opacity-50"
+                              style={{ color: '#00d4ff', background: 'rgba(0,212,255,0.12)' }}
+                            >
+                              {isLoading ? (
+                                <div className="w-4 h-4 border border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                              ) : item.status === 'aguardando' ? (
+                                <><Zap size={16} /> Iniciar</>
+                              ) : (
+                                <><CheckCircle2 size={16} /> Concluir</>
+                              )}
+                            </button>
+                          )}
+                          {/* condição de status já garantida pelo wrapper acima */}
+                          {true && (
+                            <button
+                              onClick={() => cancel(item.id)}
+                              disabled={isLoading}
+                              aria-label={`Cancelar atendimento de ${item.cliente_nome}`}
+                              className="w-11 h-11 rounded-xl flex items-center justify-center text-red-400 transition-colors disabled:opacity-50 flex-shrink-0"
+                              style={{ background: 'rgba(255,82,82,0.1)' }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              </>
             )}
 
             {!loading && filtered.length === 0 && (
@@ -694,7 +782,7 @@ export default function FilaPage() {
       {/* FAB */}
       <button
         onClick={() => setShowModal(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 z-40"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 lg:bottom-6 lg:right-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 z-40"
         style={{ background: 'linear-gradient(135deg, #00d4ff, #4f8eff)', boxShadow: '0 0 30px rgba(0,212,255,0.4)' }}
         title="Nova OS"
       >

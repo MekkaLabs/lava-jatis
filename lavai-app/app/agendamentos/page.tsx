@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import { IS_DEMO, DEMO_CLIENTES, DEMO_AGENDAMENTOS } from '@/lib/demo'
@@ -395,6 +395,13 @@ export default function AgendamentosPage() {
   const [showModal, setShowModal] = useState(false)
   const [extraAgds, setExtraAgds] = useState<Agendamento[]>([])
 
+  // Mobile: a grade semanal de 7 colunas é ilegível em 375px → default lista.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setViewMode('list')
+    }
+  }, [])
+
   // Em demo mode usa DEMO_AGENDAMENTOS centralizados; fora do demo usa gerador com seed determinística
   const baseAgds = useMemo(
     () => IS_DEMO ? demoToAgendamentos() : genMockAgendamentos(weekStart),
@@ -435,10 +442,10 @@ export default function AgendamentosPage() {
           subtitle={`${totalWeek} agendamentos esta semana`}
         />
 
-        <main className="flex-1 p-6 space-y-5">
+        <main className="flex-1 p-4 lg:p-6 space-y-5">
           {/* Stats + Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
               {/* Week nav */}
               <div className="flex items-center gap-2 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
@@ -451,10 +458,10 @@ export default function AgendamentosPage() {
                   <ChevronRight size={15} />
                 </button>
               </div>
-              <span className="text-sm font-semibold text-white">{weekLabel}</span>
+              <span className="text-sm font-semibold text-white whitespace-nowrap">{weekLabel}</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* Stats badges */}
               <div className="flex items-center gap-3 text-xs">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
@@ -494,7 +501,7 @@ export default function AgendamentosPage() {
 
       {/* FAB */}
       <button onClick={() => setShowModal(true)}
-        className="fixed bottom-8 right-8 z-40 w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all hover:scale-105 active:scale-95"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 lg:bottom-8 lg:right-8 z-40 w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all hover:scale-105 active:scale-95"
         style={{ background: 'linear-gradient(135deg,#00d4ff,#4f8eff)' }}>
         <Plus size={24} color="#000" strokeWidth={2.5} />
       </button>

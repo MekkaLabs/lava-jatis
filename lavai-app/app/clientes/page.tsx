@@ -350,7 +350,7 @@ export default function ClientesPage() {
 
             <div className="rounded-2xl overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="table-scroll">
+              <div className="table-scroll hidden lg:block">
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -423,6 +423,51 @@ export default function ClientesPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
+
+              {/* Cards — mobile apenas */}
+              <div className="lg:hidden divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                {paged.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 text-sm">Nenhum cliente encontrado</p>
+                  </div>
+                ) : paged.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelected(c)}
+                    className="w-full text-left p-4 active:bg-white/[0.03] transition-colors"
+                    style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+                  >
+                    <div className="flex items-center gap-3 mb-2.5">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${getAvatarColor(c.name)}`}>
+                        {getInitials(c.name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[15px] font-semibold text-white truncate">{c.name}</p>
+                        <p className="text-xs text-gray-500 font-mono truncate">{c.plate || '—'}</p>
+                      </div>
+                      <a
+                        href={`https://wa.me/55${(c.phone || '').replace(/\D/g, '')}`}
+                        target="_blank" rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        aria-label={`WhatsApp de ${c.name}`}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-green-400 flex-shrink-0"
+                        style={{ background: 'rgba(0,230,118,0.1)' }}
+                      >
+                        <MessageCircle size={17} />
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">{c.phone || 'sem telefone'}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1 text-gray-400">
+                          <TrendingUp size={11} className="text-cyan-400" /> {c.totalVisits} OS
+                        </span>
+                        <span className="font-semibold text-green-400">{formatCurrency(c.totalSpent)}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
 
               {totalPages > 1 && (
