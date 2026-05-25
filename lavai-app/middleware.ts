@@ -106,6 +106,7 @@ export async function middleware(request: NextRequest) {
     '/dashboard', '/fila', '/financeiro', '/clientes', '/equipe',
     '/agendamentos', '/fidelidade', '/whatsapp', '/relatorio',
     '/insights', '/configuracoes', '/planos',
+    '/admin', // super-admin: auth obrigatório (autorização por linha em super_admins é feita server-side)
   ]
   const isProtected = protectedPaths.some(p => pathname.startsWith(p))
 

@@ -4,9 +4,9 @@ import { IS_DEMO } from '@/lib/demo'
 import { Car, DollarSign, Users, Clock, Star } from 'lucide-react'
 import DashboardHeader from './components/DashboardHeader'
 import MetricCard from './components/MetricCard'
-import RevenueChart from './components/RevenueChart'
+// RevenueChart removido por solicitação (relatório ajustes MVP)
 import FilaCard from './components/FilaCard'
-import QuickActions from './components/QuickActions'
+// QuickActions removido (botão Nova OS) — usar bottom sheet do FAB nas páginas Fila/Agenda
 import { formatCurrency } from '@/lib/utils'
 import AIInsightPanel from './components/AIInsightPanel'
 
@@ -323,8 +323,6 @@ export default async function DashboardPage() {
 
           {/* Right column */}
           <div className="space-y-4">
-            <QuickActions />
-
             {topServicos.length > 0 && (
               <div
                 className="rounded-2xl p-5"
@@ -358,9 +356,6 @@ export default async function DashboardPage() {
             )}
           </div>
         </div>
-
-        {/* Revenue Chart */}
-        <RevenueChart data={receitaUltimos7Dias} />
 
         {/* NPS Widget */}
         {nps.total > 0 && (

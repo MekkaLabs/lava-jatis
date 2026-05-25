@@ -616,3 +616,64 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON pontos_clientes
 -- Verifique no painel Supabase que todas as tabelas estão criadas
 -- e que RLS está habilitada (escudo verde no Table Editor).
 -- ============================================================
+
+
+-- ============================================================
+-- SECTION 12: SUPER ADMIN (visão acima dos donos)
+-- ============================================================
+-- Tabela separada (não usa role em auth.users.metadata pra evitar bypass via API).
+-- Apenas user_ids listados aqui têm acesso a /admin (lista de lava-jatos + planos).
+
+CREATE TABLE IF NOT EXISTS super_admins (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE super_admins ENABLE ROW LEVEL SECURITY;
+
+-- Só o próprio super-admin lê sua linha (não expõe lista pra outros)
+DROP POLICY IF EXISTS "super_admins_self" ON super_admins;
+CREATE POLICY "super_admins_self" ON super_admins
+  FOR SELECT USING (user_id = auth.uid());
+
+-- Inserções/manutenção apenas via service role (não há policy de INSERT/UPDATE/DELETE).
+
+-- View que os super-admins consultam: lista de lava-jatos com plano e métricas básicas.
+-- Como super-admin não tem RLS de lava_jatos (não é dono), a leitura passa por uma
+-- RPC SECURITY DEFINER abaixo (controlada).
+
+CREATE OR REPLACE FUNCTION admin_list_lava_jatos()
+RETURNS TABLE (
+  id uuid,
+  nome text,
+  cidade text,
+  estado text,
+  plano text,
+  plano_status text,
+  ativo boolean,
+  created_at timestamptz,
+  total_atendimentos bigint,
+  total_clientes bigint
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  -- só executa se o caller for super-admin
+  IF NOT EXISTS (SELECT 1 FROM super_admins WHERE user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'forbidden: not super admin';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    lj.id, lj.nome, lj.cidade, lj.estado, lj.plano, lj.plano_status, lj.ativo, lj.created_at,
+    COALESCE((SELECT count(*) FROM atendimentos a WHERE a.lava_jato_id = lj.id), 0)::bigint,
+    COALESCE((SELECT count(*) FROM clientes c WHERE c.lava_jato_id = lj.id), 0)::bigint
+  FROM lava_jatos lj
+  ORDER BY lj.created_at DESC;
+END;
+$$;
+
+-- COMO PROMOVER UM USUÁRIO A SUPER-ADMIN (rodar manualmente no SQL Editor):
+--   INSERT INTO super_admins (user_id, email)
+--   SELECT id, email FROM auth.users WHERE email = 'gustav0.v1c3nt3@gmail.com';

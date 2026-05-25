@@ -282,43 +282,7 @@ export default function FinanceiroPage() {
             ))}
           </div>
 
-          {/* Revenue Chart */}
-          <div className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-bold text-white">Receita × Despesas × Lucro — Últimos 30 dias</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Visão financeira diária</p>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={chartData30} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00d4ff" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorDespesas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f87171" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorLucro" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00e676" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00e676" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false}
-                  interval={4} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false}
-                  tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} width={42} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af', paddingTop: 8 }} />
-                <Area type="monotone" dataKey="receita" name="Receita" stroke="#00d4ff" strokeWidth={2} fill="url(#colorReceita)" />
-                <Area type="monotone" dataKey="despesas" name="Despesas" stroke="#f87171" strokeWidth={1.5} fill="url(#colorDespesas)" />
-                <Area type="monotone" dataKey="lucro" name="Lucro" stroke="#00e676" strokeWidth={2} fill="url(#colorLucro)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Gráfico de receita removido por solicitação (relatório ajustes MVP) */}
 
           {/* Middle grid */}
           <div className="grid grid-cols-3 gap-6">

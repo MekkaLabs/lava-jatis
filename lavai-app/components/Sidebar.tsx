@@ -31,7 +31,7 @@ const navItems = [
   { href: '/agendamentos', label: 'Agendamentos', icon: Calendar },
   { href: '/financeiro',   label: 'Financeiro',   icon: DollarSign },
   { href: '/equipe',       label: 'Equipe',       icon: UserCheck },
-  { href: '/fidelidade',   label: 'Fidelidade',   icon: Star,           badge: 'PRO' },
+  // Fidelidade removida do menu — dono decide manualmente quem ganha brinde
   { href: '/whatsapp',     label: 'WhatsApp',     icon: MessageCircle,  badge: 'PRO' },
   { href: '/insights',     label: 'Insights IA',  icon: Lightbulb,      badge: 'IA'  },
   { href: '/relatorio',    label: 'Relatório',    icon: BarChart2 },

@@ -81,10 +81,23 @@ function SkeletonRows() {
   )
 }
 
-interface NovoClienteModalProps { onClose: () => void; onSave: (c: Partial<Customer & { nome: string; telefone: string; obs: string; cpf: string }>) => void }
+interface ClienteFormData { nome: string; telefone: string; email: string; placa: string; modelo: string; cor: string }
+interface NovoClienteModalProps {
+  onClose: () => void
+  onSave: (c: ClienteFormData) => void
+  cliente?: Customer | null   // se presente, modo EDITAR
+}
 
-function NovoClienteModal({ onClose, onSave }: NovoClienteModalProps) {
-  const [form, setForm] = useState({ nome: '', telefone: '', email: '', cpf: '', obs: '' })
+function NovoClienteModal({ onClose, onSave, cliente }: NovoClienteModalProps) {
+  const isEdit = !!cliente
+  const [form, setForm] = useState<ClienteFormData>({
+    nome:     cliente?.name      ?? '',
+    telefone: cliente?.phone     ?? '',
+    email:    cliente?.email     ?? '',
+    placa:    cliente?.plate     ?? '',
+    modelo:   cliente?.carModel  ?? '',
+    cor:      cliente?.carColor  ?? '',
+  })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -94,13 +107,17 @@ function NovoClienteModal({ onClose, onSave }: NovoClienteModalProps) {
     return d.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '')
   }
 
+  function applyPlateMask(raw: string) {
+    return raw.toUpperCase().slice(0, 10)
+  }
+
   async function handleSave() {
     const errs: Record<string, string> = {}
     if (!form.nome.trim()) errs.nome = 'Nome obrigatório'
     if (!form.telefone.trim()) errs.telefone = 'Telefone obrigatório'
     if (Object.keys(errs).length) { setErrors(errs); return }
     setSaving(true)
-    await new Promise(r => setTimeout(r, 600))
+    await new Promise(r => setTimeout(r, 400))
     onSave(form)
     setSaving(false)
     onClose()
@@ -112,23 +129,27 @@ function NovoClienteModal({ onClose, onSave }: NovoClienteModalProps) {
       <div className="rounded-2xl p-6 w-full max-w-md"
         style={{ background: '#0f1117', border: '1px solid rgba(255,255,255,0.12)' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Novo Cliente</h3>
+          <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{isEdit ? 'Editar Cliente' : 'Novo Cliente'}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"><X size={16} /></button>
         </div>
         <div className="space-y-4">
           {[
-            { key: 'nome', label: 'Nome completo', required: true, placeholder: 'João Carlos Silva', type: 'text' },
-            { key: 'telefone', label: 'Telefone / WhatsApp', required: true, placeholder: '(11) 99999-8888', type: 'tel' },
-            { key: 'email', label: 'E-mail', required: false, placeholder: 'joao@email.com', type: 'email' },
-            { key: 'cpf', label: 'CPF / CNPJ', required: false, placeholder: '000.000.000-00', type: 'text' },
-          ].map(({ key, label, required, placeholder, type }) => (
+            { key: 'nome',     label: 'Nome',                required: true,  placeholder: 'João Carlos Silva',   type: 'text', mask: undefined },
+            { key: 'telefone', label: 'Telefone / WhatsApp', required: true,  placeholder: '(11) 99999-8888',     type: 'tel',  mask: 'phone' as const },
+            { key: 'email',    label: 'E-mail',              required: false, placeholder: 'joao@email.com',      type: 'email', mask: undefined },
+            { key: 'placa',    label: 'Placa',               required: false, placeholder: 'ABC-1234',            type: 'text', mask: 'plate' as const },
+            { key: 'modelo',   label: 'Modelo do Veículo',   required: false, placeholder: 'Ex: Chevrolet Onix',  type: 'text', mask: undefined },
+            { key: 'cor',      label: 'Cor',                 required: false, placeholder: 'Ex: Prata',           type: 'text', mask: undefined },
+          ].map(({ key, label, required, placeholder, type, mask }) => (
             <div key={key}>
               <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">
                 {label}{required && <span className="text-red-400 ml-1">*</span>}
               </label>
-              <input type={type} value={form[key as keyof typeof form]} placeholder={placeholder}
+              <input type={type} value={form[key as keyof ClienteFormData]} placeholder={placeholder}
                 onChange={e => {
-                  const val = key === 'telefone' ? applyPhoneMask(e.target.value) : e.target.value
+                  const val = mask === 'phone' ? applyPhoneMask(e.target.value)
+                            : mask === 'plate' ? applyPlateMask(e.target.value)
+                            : e.target.value
                   setForm(f => ({ ...f, [key]: val }))
                   if (errors[key]) setErrors(er => ({ ...er, [key]: '' }))
                 }}
@@ -137,12 +158,6 @@ function NovoClienteModal({ onClose, onSave }: NovoClienteModalProps) {
               {errors[key] && <p className="text-xs text-red-400 mt-1">{errors[key]}</p>}
             </div>
           ))}
-          <div>
-            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Observação</label>
-            <textarea rows={2} value={form.obs} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))}
-              placeholder="Informações adicionais..." className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
-          </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white transition-colors"
@@ -150,7 +165,7 @@ function NovoClienteModal({ onClose, onSave }: NovoClienteModalProps) {
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-3 rounded-xl text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg,#00d4ff,#4f8eff)' }}>
-            {saving ? 'Salvando...' : 'Salvar Cliente'}
+            {saving ? 'Salvando...' : (isEdit ? 'Salvar Alterações' : 'Salvar Cliente')}
           </button>
         </div>
       </div>
@@ -257,6 +272,12 @@ export default function ClientesPage() {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Customer | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [editingCliente, setEditingCliente] = useState<Customer | null>(null)
+
+  function abrirEdicao(c: Customer) {
+    setEditingCliente(c)
+    setShowModal(true)
+  }
   const [loading, setLoading] = useState(false)
   const [clientes, setClientes] = useState<Customer[]>(IS_DEMO ? demoCustomers : [])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -293,22 +314,37 @@ export default function ClientesPage() {
     else { setSortField(field); setSortDir('asc') }
   }
 
-  function handleSaveCliente(data: Record<string, string>) {
-    const novo: Customer = {
-      id: `c-${Date.now()}`,
-      name: data.nome || '',
-      phone: data.telefone || '',
-      email: data.email || undefined,
-      plate: 'N/A',
-      carModel: 'N/A',
-      carColor: 'N/A',
-      totalVisits: 0,
-      totalSpent: 0,
-      lastVisit: new Date().toISOString().slice(0, 10),
-      loyaltyPoints: 0,
-      createdAt: new Date().toISOString().slice(0, 10),
+  function handleSaveCliente(data: ClienteFormData) {
+    if (editingCliente) {
+      // EDITAR: atualiza o existente
+      setClientes(cs => cs.map(c => c.id === editingCliente.id ? {
+        ...c,
+        name:     data.nome     || c.name,
+        phone:    data.telefone || c.phone,
+        email:    data.email    || undefined,
+        plate:    data.placa    || c.plate,
+        carModel: data.modelo   || c.carModel,
+        carColor: data.cor      || c.carColor,
+      } : c))
+      setEditingCliente(null)
+    } else {
+      // NOVO
+      const novo: Customer = {
+        id: `c-${Date.now()}`,
+        name:     data.nome     || '',
+        phone:    data.telefone || '',
+        email:    data.email    || undefined,
+        plate:    data.placa    || '',
+        carModel: data.modelo   || '',
+        carColor: data.cor      || '',
+        totalVisits: 0,
+        totalSpent: 0,
+        lastVisit: new Date().toISOString().slice(0, 10),
+        loyaltyPoints: 0,
+        createdAt: new Date().toISOString().slice(0, 10),
+      }
+      setClientes(cs => [novo, ...cs])
     }
-    setClientes(cs => [novo, ...cs])
   }
 
   const SortIcon = ({ field }: { field: SortField }) =>
@@ -408,8 +444,8 @@ export default function ClientesPage() {
                             className="p-1.5 rounded-lg hover:bg-cyan-400/10 text-gray-500 hover:text-cyan-400 transition-colors" title="Ver detalhes">
                             <Eye size={14} />
                           </button>
-                          <button onClick={e => e.stopPropagation()}
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors" title="Editar">
+                          <button onClick={e => { e.stopPropagation(); abrirEdicao(c) }}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors" title="Editar" aria-label={`Editar ${c.name}`}>
                             <Pencil size={14} />
                           </button>
                           <a href={`https://wa.me/55${(c.phone || '').replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
@@ -496,7 +532,13 @@ export default function ClientesPage() {
         </div>
       </main>
 
-      {showModal && <NovoClienteModal onClose={() => setShowModal(false)} onSave={handleSaveCliente as any} />}
+      {showModal && (
+        <NovoClienteModal
+          onClose={() => { setShowModal(false); setEditingCliente(null) }}
+          onSave={handleSaveCliente}
+          cliente={editingCliente}
+        />
+      )}
     </div>
   )
 }
