@@ -5,6 +5,7 @@ import GoogleAnalytics from '@/components/GoogleAnalytics'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import BottomTabs from '@/components/BottomTabs'
+import DemoBanner from '@/components/DemoBanner'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -137,6 +138,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <GoogleAnalytics gaId={GA_ID} />
         <ServiceWorkerRegistration />
+        <DemoBanner />
         {children}
         <BottomTabs />
         <PWAInstallBanner />

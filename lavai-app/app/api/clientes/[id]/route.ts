@@ -46,11 +46,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const validation = ClienteSchema.update(body)
     if (!validation.valid) return error(validation.errors.join('; '), 400)
 
-    const allowed = ['nome', 'telefone', 'email', 'cpf']
+    // Campos editáveis. Mapeia 'modelo' do form pra coluna 'modelo_veiculo' do banco.
+    const allowed = ['nome', 'telefone', 'email', 'cpf', 'placa', 'modelo_veiculo', 'cor'] as const
+    const limits: Record<string, number> = {
+      nome: 200, telefone: 30, email: 254, cpf: 30,
+      placa: 10, modelo_veiculo: 100, cor: 30,
+    }
     const updates: Record<string, any> = {}
     for (const key of allowed) {
-      if (key in body) updates[key] = sanitizeString(body[key] ?? '', 254)
+      if (key in body) updates[key] = sanitizeString(body[key] ?? '', limits[key] ?? 100)
     }
+    if (typeof body.modelo === 'string' && !('modelo_veiculo' in body)) {
+      updates.modelo_veiculo = sanitizeString(body.modelo, 100)
+    }
+    if ('placa' in updates && updates.placa) updates.placa = String(updates.placa).toUpperCase()
 
     if (Object.keys(updates).length === 0) return error('Nenhum campo para atualizar', 400)
 

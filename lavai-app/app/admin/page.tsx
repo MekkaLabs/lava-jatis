@@ -68,13 +68,13 @@ export default function AdminPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">LAVAI · Super-Admin</h1>
-          <p className="text-xs text-gray-500">Visão geral de todos os lava-jatos cadastrados</p>
+          <p className="text-xs text-gray-400">Visão geral de todos os lava-jatos cadastrados</p>
         </div>
       </header>
 
       <main className="p-5 max-w-6xl mx-auto space-y-5">
         {loading && (
-          <div className="flex items-center justify-center py-20 text-gray-500">
+          <div className="flex items-center justify-center py-20 text-gray-400">
             <Loader2 size={20} className="animate-spin mr-2" /> Carregando...
           </div>
         )}
@@ -82,7 +82,7 @@ export default function AdminPage() {
         {erro && (
           <div className="rounded-xl p-4" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)' }}>
             <p className="text-sm text-red-300">{erro}</p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-400 mt-2">
               Pra se promover: rode no Supabase SQL Editor —{' '}
               <code className="text-yellow-300">{`INSERT INTO super_admins (user_id, email) SELECT id, email FROM auth.users WHERE email = 'seu-email@exemplo.com';`}</code>
             </p>
@@ -105,7 +105,7 @@ export default function AdminPage() {
                 <h2 className="text-sm font-bold text-white">Lava-jatos cadastrados ({total})</h2>
               </div>
               {lavaJatos.length === 0 ? (
-                <div className="p-10 text-center text-gray-500 text-sm">Nenhum lava-jato cadastrado ainda.</div>
+                <div className="p-10 text-center text-gray-400 text-sm">Nenhum lava-jato cadastrado ainda.</div>
               ) : (
                 <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                   {lavaJatos.map(lj => {
@@ -114,7 +114,7 @@ export default function AdminPage() {
                       <div key={lj.id} className="px-5 py-4 flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-white truncate">{lj.nome}</p>
-                          <p className="text-xs text-gray-500 truncate">
+                          <p className="text-xs text-gray-400 truncate">
                             {lj.cidade ? `${lj.cidade}${lj.estado ? '/' + lj.estado : ''} · ` : ''}
                             {lj.total_clientes} clientes · {lj.total_atendimentos} OS · desde {new Date(lj.created_at).toLocaleDateString('pt-BR')}
                           </p>
@@ -148,10 +148,10 @@ function Stat({ icon: Icon, label, value, color, subtitle }:
           style={{ background: `${color}22` }}>
           <Icon size={14} color={color} strokeWidth={2.5} />
         </div>
-        <span className="text-[11px] text-gray-500 font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">{label}</span>
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
-      {subtitle && <p className="text-[10px] text-gray-500 mt-0.5">{subtitle}</p>}
+      {subtitle && <p className="text-[10px] text-gray-400 mt-0.5">{subtitle}</p>}
     </div>
   )
 }

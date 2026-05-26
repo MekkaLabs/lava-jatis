@@ -657,6 +657,7 @@ RETURNS TABLE (
   total_clientes bigint
 )
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_temp  -- previne hijack de search_path em SECURITY DEFINER (CVE clássica Postgres)
 AS $$
 BEGIN
   -- só executa se o caller for super-admin
@@ -673,6 +674,11 @@ BEGIN
   ORDER BY lj.created_at DESC;
 END;
 $$;
+
+-- Defesa em profundidade: nega EXECUTE pra PUBLIC (default Postgres) e libera só pra authenticated.
+-- Mesmo com o guard interno, evita que anon (sem JWT) consiga sequer chamar a função.
+REVOKE EXECUTE ON FUNCTION admin_list_lava_jatos() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_list_lava_jatos() TO authenticated;
 
 -- COMO PROMOVER UM USUÁRIO A SUPER-ADMIN (rodar manualmente no SQL Editor):
 --   INSERT INTO super_admins (user_id, email)

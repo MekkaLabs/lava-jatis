@@ -101,6 +101,19 @@ export const ClienteSchema = {
       if (!emailRe.test(String(data.email).trim())) errors.push('email inválido')
     }
 
+    // Campos do veículo (opcionais). Aceita também `modelo` (vindo do form) como alias de modelo_veiculo.
+    if (data.placa !== undefined && data.placa !== null && data.placa !== '') {
+      const p = String(data.placa).trim().toUpperCase()
+      if (!/^[A-Z0-9-]{4,10}$/.test(p)) errors.push('placa inválida (use letras, números e hífen, 4-10 chars)')
+    }
+    const modeloVal = data.modelo_veiculo ?? data.modelo
+    if (modeloVal !== undefined && modeloVal !== null && modeloVal !== '') {
+      if (String(modeloVal).length > 100) errors.push('modelo do veículo: máx 100 caracteres')
+    }
+    if (data.cor !== undefined && data.cor !== null && data.cor !== '') {
+      if (String(data.cor).length > 30) errors.push('cor: máx 30 caracteres')
+    }
+
     return { valid: errors.length === 0, errors }
   },
 }

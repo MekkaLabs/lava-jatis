@@ -84,7 +84,7 @@ function SkeletonRows() {
 interface ClienteFormData { nome: string; telefone: string; email: string; placa: string; modelo: string; cor: string }
 interface NovoClienteModalProps {
   onClose: () => void
-  onSave: (c: ClienteFormData) => void
+  onSave: (c: ClienteFormData) => Promise<void> | void
   cliente?: Customer | null   // se presente, modo EDITAR
 }
 
@@ -117,10 +117,14 @@ function NovoClienteModal({ onClose, onSave, cliente }: NovoClienteModalProps) {
     if (!form.telefone.trim()) errs.telefone = 'Telefone obrigatório'
     if (Object.keys(errs).length) { setErrors(errs); return }
     setSaving(true)
-    await new Promise(r => setTimeout(r, 400))
-    onSave(form)
-    setSaving(false)
-    onClose()
+    try {
+      await onSave(form)
+      onClose()
+    } catch (e) {
+      // erro mostrado no handler (alert) — mantém modal aberto pra corrigir
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -173,7 +177,7 @@ function NovoClienteModal({ onClose, onSave, cliente }: NovoClienteModalProps) {
   )
 }
 
-function ClienteDetail({ cliente, onClose }: { cliente: Customer; onClose: () => void }) {
+function ClienteDetail({ cliente, onClose, onEdit }: { cliente: Customer; onClose: () => void; onEdit?: () => void }) {
   const mockHistory = [
     { id: 'os-1', data: '2026-05-14', servico: 'Lavagem Completa', valor: 120, status: 'concluido' },
     { id: 'os-2', data: '2026-04-28', servico: 'Polimento', valor: 250, status: 'concluido' },
@@ -191,12 +195,25 @@ function ClienteDetail({ cliente, onClose }: { cliente: Customer; onClose: () =>
   const totalHistorico = mockHistory.filter(o => o.status === 'concluido').reduce((s, o) => s + o.valor, 0)
 
   return (
-    <div className="w-[400px] flex-shrink-0 flex flex-col overflow-hidden"
+    <div className="fixed inset-0 z-40 flex flex-col overflow-hidden lg:relative lg:inset-auto lg:z-auto lg:w-[400px] lg:flex-shrink-0"
       style={{ borderLeft: '1px solid rgba(255,255,255,0.07)', background: '#0f1117' }}>
-      <div className="flex items-center justify-between p-5 pb-4"
+      <div className="flex items-center justify-between p-5 pb-4 gap-2"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <h2 className="font-bold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Perfil do Cliente</h2>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"><X size={16} /></button>
+        <div className="flex items-center gap-2">
+          {onEdit && (
+            <button onClick={onEdit}
+              aria-label="Editar dados do cliente"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style={{ background: 'rgba(0,212,255,0.12)', color: '#00d4ff', border: '1px solid rgba(0,212,255,0.25)' }}>
+              <Pencil size={13} /> Editar
+            </button>
+          )}
+          <button onClick={onClose} aria-label="Fechar"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
         <div className="text-center">
@@ -314,36 +331,82 @@ export default function ClientesPage() {
     else { setSortField(field); setSortDir('asc') }
   }
 
-  function handleSaveCliente(data: ClienteFormData) {
-    if (editingCliente) {
-      // EDITAR: atualiza o existente
-      setClientes(cs => cs.map(c => c.id === editingCliente.id ? {
-        ...c,
-        name:     data.nome     || c.name,
-        phone:    data.telefone || c.phone,
-        email:    data.email    || undefined,
-        plate:    data.placa    || c.plate,
-        carModel: data.modelo   || c.carModel,
-        carColor: data.cor      || c.carColor,
-      } : c))
-      setEditingCliente(null)
-    } else {
-      // NOVO
-      const novo: Customer = {
-        id: `c-${Date.now()}`,
-        name:     data.nome     || '',
-        phone:    data.telefone || '',
-        email:    data.email    || undefined,
-        plate:    data.placa    || '',
-        carModel: data.modelo   || '',
-        carColor: data.cor      || '',
-        totalVisits: 0,
-        totalSpent: 0,
-        lastVisit: new Date().toISOString().slice(0, 10),
-        loyaltyPoints: 0,
-        createdAt: new Date().toISOString().slice(0, 10),
+  async function handleSaveCliente(data: ClienteFormData) {
+    // Em demo: mantém comportamento local (não persiste — banner avisa)
+    if (IS_DEMO) {
+      if (editingCliente) {
+        setClientes(cs => cs.map(c => c.id === editingCliente.id ? {
+          ...c,
+          name:     data.nome     || c.name,
+          phone:    data.telefone || c.phone,
+          email:    data.email    || undefined,
+          plate:    data.placa    || c.plate,
+          carModel: data.modelo   || c.carModel,
+          carColor: data.cor      || c.carColor,
+        } : c))
+        setEditingCliente(null)
+      } else {
+        const novo: Customer = {
+          id: `c-${Date.now()}`,
+          name: data.nome || '', phone: data.telefone || '', email: data.email || undefined,
+          plate: data.placa || '', carModel: data.modelo || '', carColor: data.cor || '',
+          totalVisits: 0, totalSpent: 0, lastVisit: new Date().toISOString().slice(0, 10),
+          loyaltyPoints: 0, createdAt: new Date().toISOString().slice(0, 10),
+        }
+        setClientes(cs => [novo, ...cs])
       }
-      setClientes(cs => [novo, ...cs])
+      return
+    }
+
+    // Real (Supabase): chama API
+    const payload = {
+      nome: data.nome,
+      telefone: data.telefone,
+      email: data.email || null,
+      placa: data.placa || null,
+      modelo_veiculo: data.modelo || null,
+      cor: data.cor || null,
+    }
+    try {
+      if (editingCliente) {
+        const res = await fetch(`/api/clientes/${editingCliente.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Erro ao salvar')
+        const { data: updated } = await res.json()
+        setClientes(cs => cs.map(c => c.id === editingCliente.id ? {
+          ...c,
+          name: updated?.nome ?? data.nome,
+          phone: updated?.telefone ?? data.telefone,
+          email: updated?.email ?? data.email,
+          plate: updated?.placa ?? data.placa,
+          carModel: updated?.modelo_veiculo ?? data.modelo,
+          carColor: updated?.cor ?? data.cor,
+        } : c))
+        setEditingCliente(null)
+      } else {
+        const res = await fetch('/api/clientes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Erro ao salvar')
+        const { data: created } = await res.json()
+        setClientes(cs => [{
+          id: created?.id ?? `c-${Date.now()}`,
+          name: created?.nome ?? data.nome, phone: created?.telefone ?? data.telefone,
+          email: created?.email ?? data.email,
+          plate: created?.placa ?? data.placa, carModel: created?.modelo_veiculo ?? data.modelo,
+          carColor: created?.cor ?? data.cor,
+          totalVisits: 0, totalSpent: 0,
+          lastVisit: new Date().toISOString().slice(0, 10),
+          loyaltyPoints: 0, createdAt: new Date().toISOString().slice(0, 10),
+        }, ...cs])
+      }
+    } catch (e: any) {
+      alert(`Erro ao salvar cliente: ${e?.message ?? 'desconhecido'}`)
     }
   }
 
@@ -528,7 +591,13 @@ export default function ClientesPage() {
             </div>
           </div>
 
-          {selected && <ClienteDetail cliente={selected} onClose={() => setSelected(null)} />}
+          {selected && (
+            <ClienteDetail
+              cliente={selected}
+              onClose={() => setSelected(null)}
+              onEdit={() => { abrirEdicao(selected); setSelected(null) }}
+            />
+          )}
         </div>
       </main>
 
