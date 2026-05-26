@@ -81,10 +81,14 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({ ok: true })
     const maxAge   = authBody.expires_in ?? 3600
 
-    // Cookie de sessão Supabase. httpOnly impede roubo via XSS.
-    // @supabase/ssr lê do cookie store server-side, não precisa de JS.
+    // Cookie de sessão Supabase. NÃO httpOnly por DESIGN:
+    // - @supabase/ssr createBrowserClient lê do document.cookie pra autenticar
+    //   queries client-side (NovaOSSheet, autocomplete, Realtime).
+    // - httpOnly bloqueava JS → queries iam como anon → RLS retornava [].
+    // Mitigação XSS: CSP strict (script-src 'self'), React auto-escape,
+    // sanitização nas APIs, TTL curto do token (1h Supabase default).
     response.cookies.set(cookieName, JSON.stringify(authBody), {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       maxAge,
       path: '/',
