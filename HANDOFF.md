@@ -1,119 +1,129 @@
-# LAVAI — Handoff de Sessão (2026-05-21)
+# LAVAI — Handoff de Sessão (atualizado 2026-05-28)
 
-> Documento de continuação. Leia junto com `CLAUDE.md` (contexto do produto) e
-> `AGENTS.md`. Vault de conhecimento: `~/Documents/lavai-obsidian/`.
+> Documento de continuação. Leia junto com `CLAUDE.md` (contexto do produto),
+> `GUIA_CONECTAR_SUPABASE.md` e `VERCEL_ENV_SETUP.md`.
+> Vault de conhecimento: `~/Documents/lavai-obsidian/`.
 
 ---
 
 ## 🚦 Como continuar nesta nova aba
 
 1. Ler `CLAUDE.md` — produto, stack, estrutura, padrões
-2. Ler este `HANDOFF.md` — estado atual + aprendizados desta sessão
-3. Abrir o vault Obsidian (`~/Documents/lavai-obsidian/`) → `LLM-CONNECT.md` e o daily mais recente
-4. Estado das tasks: ver seção "Tasks pendentes" abaixo
+2. Ler este `HANDOFF.md` — estado atual + aprendizados
+3. Abrir o vault Obsidian → `LLM-CONNECT.md` + daily mais recente
+4. Tasks: 70 de 79 completas (ver seção "Tasks pendentes")
 
 ---
 
 ## 📍 Estado do código
 
 - **Branch:** `main` | **Repo:** https://github.com/MekkaLabs/lava-jatis
-- **Último commit:** `a11d969` (fixes mobile UX). Git **limpo** (tudo commitado e pushado).
-- **App:** `lavai-app/` (Next.js 14 App Router). **Build passa** (`tsc --noEmit` exit 0, `npm run build` exit 0).
+- **Último commit:** `695b73b` (fix auditoria AIOS multi-agente). Git **limpo**.
+- **App:** `lavai-app/` (Next.js **14.2.35** App Router). Build passa (`tsc --noEmit` + `npm run build` exit 0).
+- **Supabase:** REAL e conectado (projeto ref `rkubeyoxgojbtwqrrwmn`). Schema aplicado. 2 tenants existentes.
+- **Vercel:** deploy pendente das env vars (ver `VERCEL_ENV_SETUP.md`).
 
-### Commits desta sessão (mais recente → antigo)
-- `a11d969` — fix(mobile): FAB único, cards Fila/Clientes, calendário em lista
-- `1190187` — fix: regressões mobile/produção (loop redirect, CSP, service worker)
-- `0fdbccf` — feat: hardening segurança + PWA premium + limpeza
-- `7261d5b` — feat: PWA premium (banner+tabs+FAB) + LGPD
-- `489aff6` — feat: MVP hardening (segurança, mobile, onboarding, landing)
+### Métrica do código
+46 rotas API · 22 páginas · 21 componentes · 0 testes automatizados (gap conhecido)
+
+### Commits-chave da jornada (mais recente → antigo)
+- `695b73b` — fix: auditoria AIOS (CVEs Next, persist clientes placa/modelo/cor, Realtime tenant filter, getUser dashboard, insights gate, WipBanner, RLS deny-default)
+- `25a1e8f` — fix: cookie sem httpOnly (browser client precisa pra RLS)
+- `56fb73f` — feat: ajustes MVP (autocomplete cliente, edit cliente, super-admin, guia)
+- `1190187` — fix: regressões mobile/produção (loop redirect, CSP, SW)
+- `0fdbccf` — feat: hardening segurança + PWA premium
+- `489aff6` — feat: MVP hardening
 
 ---
 
-## ▶️ Como rodar (LEIA — aprendizado importante)
+## ▶️ Como rodar (LEIA — aprendizados)
 
-⚠️ **`next dev` é cronicamente INSTÁVEL nesta máquina** (cai sozinho, compila em 35s).
-**Use build de produção (`next start`)** para testes estáveis:
+⚠️ **`next dev` é INSTÁVEL nesta máquina** (cai, OOM). Use **`next start`** (produção):
 
 ```bash
 cd ~/Documents/Claude/Projects/lava-jatis/lavai-app
 npm run build
-npm start -- -H 0.0.0.0   # escuta em 127.0.0.1 (tunnel) + IP local (Wi-Fi)
+npm start -- -H 0.0.0.0
 ```
 
-### Acesso
+### Acesso de teste
 - **IP local (mesma Wi-Fi):** `http://192.168.0.199:3000`
 - **Tunnel (qualquer rede):** `cloudflared tunnel --url http://127.0.0.1:3000`
-  - ⚠️ aponte para **`127.0.0.1`** (IPv4), não `localhost` (resolve `::1` IPv6 e dá "connection refused")
-  - a URL trycloudflare muda a cada restart
-  - o sandbox do Claude bloqueia `*.trycloudflare.com` via TCP → não dá pra validar a URL pública por curl daqui; valide via `127.0.0.1` / IP local
+  - ⚠️ use **`127.0.0.1`** (IPv4), nunca `localhost` (resolve `::1` → connection refused)
+  - sandbox do Claude bloqueia `*.trycloudflare.com` via TCP — não dá pra validar a URL pública por curl daqui; validar via 127.0.0.1
 - **Login demo:** `admin` / `Am0cmph3@`
 
-### ⚠️ Demo mode depende de flag
-Em produção (`next start`, `NODE_ENV=production`) o demo **só ativa** com
-`NEXT_PUBLIC_LAVAI_DEMO_ENABLED=true` no `.env.local`. **Já está setada.**
-A `NEXT_PUBLIC_SUPABASE_URL` no `.env.local` é **real** (`rkub...`), mas o schema
-provavelmente não foi aplicado no Supabase (task F0 pendente) — por isso o **demo
-é o caminho de teste** atual.
+### ⚠️ Demo mode vs Supabase real
+- `.env.local` tem `NEXT_PUBLIC_LAVAI_DEMO_ENABLED=true` (modo demo ATIVO localmente)
+- `NEXT_PUBLIC_SUPABASE_URL` é REAL (`rkubeyoxgojbtwqrrwmn`)
+- Pra testar com dados reais: setar `NEXT_PUBLIC_LAVAI_DEMO_ENABLED=false` + rebuild + logout/login
+- **Tenant do Gusta:** "Mekka Wash" (lava_jato_id `1ec328a0-0e1c-4511-9690-a6ddfab015cb`) — já tem 7 serviços inseridos via SQL
 
 ---
 
-## 🧠 Decisões críticas (ADRs no vault: `10 - Projects/LAVAI/06 - Stories and Roadmap/ADRs/`)
+## 🧠 Decisões críticas (ADRs no vault)
 
-1. **ADR-001** — coluna canônica é `user_id` (não `owner_id`). Schema único: `lavai-app/supabase/SETUP_COMPLETO.sql` (idempotente).
-2. **ADR-002** — demo mode via flag explícita `NEXT_PUBLIC_LAVAI_DEMO_ENABLED`. **Detecção centralizada em `lib/demo.ts` (`IS_DEMO`).**
-3. **ADR-003** — NPS via link HMAC-signed (`lib/nps-signature.ts`).
-4. **ADR-004** — webhook Asaas idempotente (tabela `webhook_events`, sempre 200).
-5. **ADR-005** — posicionamento "Piloto automático do lava-jato" / H1 "refém".
-6. **ADR-006** — PWA premium + hardening v2.
+1. **ADR-001** — coluna canônica `user_id` (não owner_id). Schema único `supabase/SETUP_COMPLETO.sql`.
+2. **ADR-002** — demo via flag `NEXT_PUBLIC_LAVAI_DEMO_ENABLED`. **Detecção única em `lib/demo.ts` (`IS_DEMO`)**.
+3. **ADR-003** — NPS via link HMAC-signed.
+4. **ADR-004** — webhook Asaas idempotente.
+5. **ADR-005** — posicionamento "Piloto automático".
+6. **ADR-006** — PWA premium + decisões de NÃO-fazer (sameSite strict, Expo).
 
-### Regra de ouro aprendida
-**A detecção de demo DEVE ser única (`IS_DEMO` de `lib/demo.ts`).** Vários bugs vieram
-de cópias divergentes da lógica (fila, NovaOSSheet, /api/me, dashboard). Todas
-unificadas. **Se criar algo que precise saber se é demo, importe `IS_DEMO`.**
-
----
-
-## 🐛 Regressões resolvidas nesta sessão (e como evitar repetir)
-
-| Sintoma | Causa | Lição |
-|---------|-------|-------|
-| "Design todo zuado" no celular | CSP `upgrade-insecure-requests` forçava HTTPS no acesso HTTP (IP local) | Não usar `upgrade-insecure-requests` em ambiente que serve HTTP |
-| "Não abre" no celular | Service Worker v2 (cache-first) servia assets velhos | SW agora é **v3 sem cache** (`public/sw.js`) — só push notifications |
-| "Não loga nem demo" | flag demo faltava no build de produção | flag `NEXT_PUBLIC_LAVAI_DEMO_ENABLED=true` no `.env.local` |
-| "Dashboard piscando" | loop redirect: dashboard usava lógica antiga de demo → `redirect('/login')` ↔ middleware | unificado com `IS_DEMO` |
+### Regras de ouro aprendidas (não repetir os erros)
+- **Detecção de demo SEMPRE via `IS_DEMO` de `lib/demo.ts`.** Cópias divergentes causaram loop de redirect + RLS anon.
+- **Cookie de auth NÃO pode ser `httpOnly`** — `@supabase/ssr` browser client lê via `document.cookie` pra autenticar queries client-side. httpOnly → query anon → RLS retorna []. (Mitigação XSS: CSP strict + React escape + token TTL 1h.)
+- **CSP sem `upgrade-insecure-requests`** — quebra acesso HTTP (IP local/dev).
+- **Service Worker é v3 SEM cache** — cache-first servia assets velhos = "design zuado".
+- **Realtime channel SEMPRE com `filter: lava_jato_id=eq.X`** — sem filter, payload de INSERT vaza entre tenants.
 
 ---
 
-## 📱 Estado do mobile (commit a11d969)
+## 🐛 Auditoria AIOS multi-agente (commit 695b73b) — o que foi achado e corrigido
 
-Feito (validado por `tsc`+`build`, **pendente confirmação visual do usuário no device**):
-- FAB único (sem duplicação), posicionado acima das bottom tabs
-- Header sem botões mortos (busca/notificações removidos)
-- **Fila** e **Clientes**: tabela → cards no mobile (`<lg`), tabela mantida no desktop
-- **Agendamentos**: default vista de lista no mobile + header compacto
-- Fixes centrais: padding-bottom nas bottom tabs, `100dvh`, `.table-scroll`
+6 agentes (architect/devops/security/dev-qa/ux/data) varreram o sistema. **10 fixes aplicados:**
+
+| Achado | Fix |
+|--------|-----|
+| Next 14.2.5 com 24 CVEs (Auth Bypass middleware) | bump → 14.2.35 |
+| `/api/clientes` POST descartava placa/modelo/cor | adicionado ao insert |
+| Realtime `/fila` vazava dados entre tenants | filter por lava_jato_id + guard |
+| `/agendamentos` gerava mocks fake fora do demo | retorna [] + WipBanner |
+| `/insights` mostrava "+17%🚀" sobre 0 OS | gate ≥10 OS com barra progresso |
+| dashboard usava getSession() | trocado por getUser() |
+| `/api/cadastro` sem rate limit | 3/h por IP + Turnstile |
+| `/api/health` vazava version (fingerprint) | payload mínimo público |
+| webhook_events/solicitacoes_lgpd sem RLS | deny-by-default (migration aplicada) |
+| 3 telas "teatro" (toast verde, nada salva) | WipBanner honesto |
 
 ---
 
-## ✅ Tasks pendentes
+## ✅ Tasks pendentes (9 de 79)
 
-### Dependem do usuário (Gusta)
-- **F0** Aplicar `SETUP_COMPLETO.sql` no Supabase real
-- **F0** Configurar env vars no Vercel Production + validar deploy
-- **F0** Smoke test com dev parceiro
-- Criar contas: Upstash (rate limit), Sentry (erros), PostHog (analytics)
-- Calcular runway + kill date; validar mensagem "refém" presencial; plan B do WhatsApp bot
+### Bugs ainda abertos (eu consigo fazer)
+- **#70** `/clientes` nunca faz GET em produção — useState `[]` sem fetch. Lista vazia após F5. **PRÓXIMO P0.**
+- **#53** `/agendamentos` persistir (fetch + POST real, cadastrar cliente novo inline)
+- **#55** `/equipe` persistir funcionários novos (era limitação demo, agora Supabase real)
 
-### Posso fazer no código (não dependem do usuário)
-- **Mobile (continuação):** outras tabelas → cards (financeiro, equipe, fidelidade)
-- Implementar busca global + central de notificações reais (foram removidas por serem decorativas)
-- Reduzir os ~96 `any` em `app/api`+`lib` (zod gradual)
-- Componentes UI base (`<Button>`/`<Input>`/`<Modal>`) — eliminar duplicação
-- Reativar PWA offline de forma segura (SW network-first, quando estabilizar)
+### Dependem do Gusta
+- **#17/18/19** Env vars no Vercel + deploy + smoke test (ver `VERCEL_ENV_SETUP.md`)
+- **#23** Runway + kill date · **#24** validar "refém" presencial · **#27** plan B WhatsApp bot
+- **#26** Sentry (free tier) — Cyber Chief recomendou reativar antes do go-live
 
-### Decisões registradas de NÃO-fazer (ver ADR-006)
-- `sameSite: strict` + CSRF token (`lax` já mitiga; strict quebra UX)
-- App Expo/React Native (pré-PMF não justifica; PWA entrega 90%)
+### Registro pendente
+- **#79** Salvar os 6 relatórios de agentes AIOS no vault (`03 - Agents/*-2026-05-28.md`)
+
+---
+
+## 🔒 Backlog de segurança (Cyber Chief — próximas 2 semanas)
+
+Ordem recomendada (todos não-bloqueantes mas importantes pré-go-live):
+1. `safeJsonLd()` no layout (escape do JSON-LD) — defesa XSS
+2. Origin check no middleware pra POSTs (CSRF defense-in-depth) — cuidado com webhooks (Asaas/Z-API não mandam Origin)
+3. Tabela `admin_audit_log` + INSERT na RPC admin
+4. Reduzir JWT expiry pra 3600s no Supabase Dashboard
+5. CSP nonce-based (mata `unsafe-inline`) — 1 dia de trabalho
+6. TOTP MFA pros super-admins (Supabase Auth built-in)
 
 ---
 
@@ -121,17 +131,17 @@ Feito (validado por `tsc`+`build`, **pendente confirmação visual do usuário n
 
 | Arquivo | Para quê |
 |---------|----------|
-| `lavai-app/lib/demo.ts` | `IS_DEMO` (fonte única) + dados demo + `DEMO_CREDENTIALS` |
-| `lavai-app/middleware.ts` | auth guard, rate limit, demo bypass (`getUser`) |
-| `lavai-app/lib/api-helpers.ts` | `requireAuth()`, response helpers, rate limit |
-| `lavai-app/lib/logger.ts` | logger com PII redaction (email/tel/CPF) |
-| `lavai-app/lib/nps-signature.ts` | HMAC sign/verify dos links NPS |
-| `lavai-app/lib/fetch-timeout.ts` | timeouts em Asaas/Z-API/Anthropic |
-| `lavai-app/supabase/SETUP_COMPLETO.sql` | schema único idempotente |
-| `lavai-app/public/sw.js` | service worker v3 (sem cache) |
-| `lavai-app/next.config.js` | headers de segurança (CSP sem upgrade-insecure-requests) |
-| `lavai-app/components/{Sidebar,Header,BottomTabs}.tsx` | navegação |
-| `lavai-app/components/{FAB,NovaOSSheet}.tsx` | **órfãos** (FAB global removido do layout) — podem ser deletados |
+| `lib/demo.ts` | `IS_DEMO` (fonte única) + dados demo + `DEMO_CREDENTIALS` |
+| `middleware.ts` | auth guard (getUser), rate limit, demo bypass, security headers |
+| `lib/api-helpers.ts` | `requireAuth()`, rate limit, response helpers, sanitizeString |
+| `lib/logger.ts` | logger com PII redaction |
+| `lib/nps-signature.ts` | HMAC sign/verify NPS |
+| `lib/turnstile.ts` | verifyTurnstile (no-op se sem chave) |
+| `supabase/SETUP_COMPLETO.sql` | schema único idempotente (+ super_admins SECTION 12) |
+| `components/NovaOSSheet.tsx` | bottom sheet Nova OS com autocomplete cliente |
+| `components/ui/WipBanner.tsx` | banner "em desenvolvimento" reutilizável |
+| `app/admin/page.tsx` | super-admin (lista tenants + MRR) |
+| `app/api/admin/lava-jatos/route.ts` | RPC admin_list_lava_jatos |
 
 ---
 
@@ -141,4 +151,5 @@ Feito (validado por `tsc`+`build`, **pendente confirmação visual do usuário n
 cd ~/Documents/Claude/Projects/lava-jatis/lavai-app
 git log --oneline -3 && npm run build && npm start -- -H 0.0.0.0
 ```
-Depois subir o tunnel e continuar a auditoria visual mobile (validar Fila/Clientes/Agenda/Configurações no device) ou pegar uma task da lista acima.
+
+**Pendência aberta pra retomar:** task #70 (`/clientes` GET real) é o próximo P0 — sem ela, lista de clientes fica vazia após F5 em produção. Depois #53 e #55 (persistência agendamentos/equipe).
