@@ -62,13 +62,14 @@ async function getDashboardData() {
   }
 
   const supabase = createServerSupabaseClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/login')
+  // getUser revalida o JWT com o Auth server (vs getSession que confia no cookie)
+  const { data: { user }, error: authErr } = await supabase.auth.getUser()
+  if (authErr || !user) redirect('/login')
 
   const { data: lavaJato } = await supabase
     .from('lava_jatos')
     .select('id, nome')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .single()
 
   if (!lavaJato) return { error: 'Lava-jato não encontrado' }

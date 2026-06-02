@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
+import WipBanner from '@/components/ui/WipBanner'
 import { IS_DEMO, DEMO_RECEITA_7D, DEMO_DESPESAS } from '@/lib/demo'
 import { todayTransactions, todayExpenses, dayClosings } from '@/lib/mock-data'
 import { formatCurrency } from '@/lib/utils'
@@ -242,6 +243,12 @@ export default function FinanceiroPage() {
         <Header title="Financeiro" subtitle="Análise financeira do seu lava-jato" />
 
         <main className="flex-1 p-6 space-y-6">
+          {!IS_DEMO && (
+            <WipBanner taskRef="AJ4">
+              KPIs financeiros ainda exibem dados de exemplo. Lançar nova despesa não persiste.
+              Integração com receita real das OS + tabela <code>despesas</code> em breve.
+            </WipBanner>
+          )}
 
           {/* Date Range + Export */}
           <div className="flex items-center justify-between">

@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
+import WipBanner from '@/components/ui/WipBanner'
+import { IS_DEMO } from '@/lib/demo'
 import { lavaJato } from '@/lib/mock-data'
 import {
   User, CreditCard, Bell, Plug, AlertTriangle, Check, X, Copy, Upload,
@@ -567,6 +569,14 @@ export default function ConfiguracoesPage() {
 
         <main className="flex-1 p-6">
           <div className="max-w-3xl mx-auto">
+            {!IS_DEMO && (
+              <div className="mb-5">
+                <WipBanner taskRef="UX-CRIT">
+                  Configurações ainda não persistem no banco. Alterações somem ao recarregar.
+                  Estamos integrando com <code>/api/me</code> + endpoints de update.
+                </WipBanner>
+              </div>
+            )}
             {/* Tab bar */}
             <div className="flex gap-1 p-1 rounded-2xl mb-6"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>

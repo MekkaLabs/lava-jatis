@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
+import WipBanner from '@/components/ui/WipBanner'
 import { IS_DEMO, DEMO_CLIENTES, DEMO_AGENDAMENTOS } from '@/lib/demo'
 import { getInitials, getAvatarColor, formatCurrency } from '@/lib/utils'
 import {
@@ -402,9 +403,11 @@ export default function AgendamentosPage() {
     }
   }, [])
 
-  // Em demo mode usa DEMO_AGENDAMENTOS centralizados; fora do demo usa gerador com seed determinística
+  // Em demo mode usa DEMO_AGENDAMENTOS centralizados.
+  // Fora do demo retorna [] (não inventar agendamentos fake — destrói confiança).
+  // TODO #53: fetchar de /api/atendimentos?week=... e persistir POST de novos.
   const baseAgds = useMemo(
-    () => IS_DEMO ? demoToAgendamentos() : genMockAgendamentos(weekStart),
+    () => IS_DEMO ? demoToAgendamentos() : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [weekStart.toISOString()]
   )
@@ -443,6 +446,12 @@ export default function AgendamentosPage() {
         />
 
         <main className="flex-1 p-4 lg:p-6 space-y-5">
+          {!IS_DEMO && (
+            <WipBanner taskRef="#53">
+              Esta tela ainda não persiste agendamentos no banco. Novos agendamentos somem ao recarregar.
+              Em desenvolvimento — em breve integrada com <code>/api/atendimentos</code>.
+            </WipBanner>
+          )}
           {/* Stats + Controls */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">

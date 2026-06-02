@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const validation = ClienteSchema.create(body)
     if (!validation.valid) return error(validation.errors.join('; '), 400)
 
-    const { nome, telefone, email, cpf } = body
+    const { nome, telefone, email, cpf, placa, modelo_veiculo, cor } = body
 
     const supabase = createServerSupabaseClient()
     const { data, error: dbErr } = await supabase
@@ -65,6 +65,9 @@ export async function POST(req: NextRequest) {
         telefone: sanitizeString(telefone, 20),
         email: email ? sanitizeString(email, 254) : null,
         cpf: cpf ? sanitizeString(cpf, 18) : null,
+        placa: placa ? sanitizeString(placa, 10).toUpperCase() : null,
+        modelo_veiculo: modelo_veiculo ? sanitizeString(modelo_veiculo, 100) : null,
+        cor: cor ? sanitizeString(cor, 30) : null,
       })
       .select()
       .single()

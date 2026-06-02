@@ -326,41 +326,61 @@ export default function FilaPage() {
 
     if (IS_DEMO) return // no realtime in demo mode
 
-    // Real-time subscription via Supabase channel
-    const channel = supabase
-      .channel('atendimentos-fila')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'atendimentos' },
-        (payload: any) => {
-          if (payload.eventType === 'INSERT') {
-            const newRow = payload.new as any
-            setAtendimentos(prev => {
-              if (prev.find(a => a.id === newRow.id)) return prev
-              return [{
-                id: newRow.id,
-                cliente_nome: newRow.cliente_nome ?? 'Cliente',
-                placa: newRow.placa,
-                modelo: newRow.modelo,
-                cor: newRow.cor,
-                status: newRow.status,
-                preco_final: newRow.preco_final,
-                created_at: newRow.created_at,
-              }, ...prev]
-            })
-          } else if (payload.eventType === 'UPDATE') {
-            const upd = payload.new as any
-            setAtendimentos(prev =>
-              prev.map(a => a.id === upd.id ? { ...a, status: upd.status, preco_final: upd.preco_final } : a)
-            )
-          } else if (payload.eventType === 'DELETE') {
-            setAtendimentos(prev => prev.filter(a => a.id !== payload.old.id))
-          }
-        }
-      )
-      .subscribe()
+    let channel: any
+    let cancelled = false
 
-    return () => { supabase.removeChannel(channel) }
+    // Carrega o próprio lava_jato_id pra filtrar o channel (evita vazamento entre tenants:
+    // o RLS bloqueia o SELECT, mas o broadcast do INSERT chega no client sem filter).
+    ;(async () => {
+      const { data: lj } = await supabase
+        .from('lava_jatos').select('id').single()
+      if (cancelled || !lj) return
+      const meuLavaJatoId = lj.id
+
+      channel = supabase
+        .channel(`atendimentos-fila-${meuLavaJatoId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'atendimentos',
+            filter: `lava_jato_id=eq.${meuLavaJatoId}`,
+          },
+          (payload: any) => {
+            // Defense in depth: mesmo com filter, valida no handler
+            const row = (payload.new ?? payload.old) as any
+            if (row?.lava_jato_id && row.lava_jato_id !== meuLavaJatoId) return
+
+            if (payload.eventType === 'INSERT') {
+              const newRow = payload.new as any
+              setAtendimentos(prev => {
+                if (prev.find(a => a.id === newRow.id)) return prev
+                return [{
+                  id: newRow.id,
+                  cliente_nome: newRow.cliente_nome ?? 'Cliente',
+                  placa: newRow.placa,
+                  modelo: newRow.modelo,
+                  cor: newRow.cor,
+                  status: newRow.status,
+                  preco_final: newRow.preco_final,
+                  created_at: newRow.created_at,
+                }, ...prev]
+              })
+            } else if (payload.eventType === 'UPDATE') {
+              const upd = payload.new as any
+              setAtendimentos(prev =>
+                prev.map(a => a.id === upd.id ? { ...a, status: upd.status, preco_final: upd.preco_final } : a)
+              )
+            } else if (payload.eventType === 'DELETE') {
+              setAtendimentos(prev => prev.filter(a => a.id !== payload.old.id))
+            }
+          }
+        )
+        .subscribe()
+    })()
+
+    return () => { cancelled = true; if (channel) supabase.removeChannel(channel) }
   }, [supabase, loadAtendimentos, loadServicos])
 
   const advance = async (id: string, currentStatus: AtendStatus) => {

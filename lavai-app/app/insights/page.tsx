@@ -311,6 +311,34 @@ export default function InsightsPage() {
         ))}
       </div>
 
+      {/* Gate: dados insuficientes pra insights confiáveis */}
+      {!IS_DEMO && data?.metrics && data.metrics.atendimentosUltimos30Dias < 10 && (
+        <div
+          className="rounded-xl p-5 flex items-start gap-3"
+          style={{ background: 'rgba(255,214,0,0.06)', border: '1px solid rgba(255,214,0,0.25)' }}
+          role="status"
+        >
+          <div className="text-2xl">🤖</div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white mb-1">Dados ainda insuficientes pra insights confiáveis</p>
+            <p className="text-xs text-gray-400">
+              A IA precisa de pelo menos 10 OS concluídas pra detectar padrões reais.
+              Você tem <strong className="text-white">{data.metrics.atendimentosUltimos30Dias} de 10</strong>.
+              Volte aqui após concluir mais {10 - data.metrics.atendimentosUltimos30Dias} OS.
+            </p>
+            <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  background: 'linear-gradient(90deg, #ffd600, #ff9800)',
+                  width: `${Math.min(100, (data.metrics.atendimentosUltimos30Dias / 10) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Trend comparisons */}
       {data?.metrics && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

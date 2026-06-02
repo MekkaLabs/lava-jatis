@@ -30,15 +30,25 @@ export async function GET(_req: NextRequest) {
 
   const allOk = dbStatus === 'connected'
 
+  // Payload mínimo pra público (evita fingerprinting CVE + timing side channel).
+  // Detalhes só pra Vercel internal monitoring (user-agent vercel/* ou header interno).
+  const ua = _req.headers.get('user-agent') ?? ''
+  const isInternal = ua.includes('vercel') || _req.headers.get('x-vercel-internal-deployment-id')
+
+  const publicPayload = {
+    status: allOk ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+  }
+  const detailedPayload = {
+    ...publicPayload,
+    version: process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0',
+    db: dbStatus,
+    dbLatencyMs,
+    uptimeMs: Date.now() - startMs,
+  }
+
   return Response.json(
-    {
-      status: allOk ? 'ok' : 'degraded',
-      timestamp: new Date().toISOString(),
-      version: process.env.NEXT_PUBLIC_APP_VERSION ?? '1.0.0',
-      db: dbStatus,
-      dbLatencyMs,
-      uptimeMs: Date.now() - startMs,
-    },
+    isInternal ? detailedPayload : publicPayload,
     {
       status: allOk ? 200 : 503,
       headers: {

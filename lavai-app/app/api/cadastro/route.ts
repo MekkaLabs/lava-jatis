@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { SERVICOS_DEFAULTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
+import { rateLimit } from '@/lib/api-helpers'
+import { verifyTurnstile } from '@/lib/turnstile'
 
 // Regex helpers
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -22,9 +24,24 @@ function capitalize(str: string) {
  * Após sucesso, o front faz signInWithPassword para estabelecer sessão.
  */
 export async function POST(req: NextRequest) {
+  // ── Anti-abuso (anti-DoS de cadastro/queima de cota) ────────
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!rateLimit(`signup:${ip}`, 3, 3600_000)) {
+    return NextResponse.json(
+      { error: 'Muitas tentativas. Aguarde 1 hora.' },
+      { status: 429 }
+    )
+  }
+
   try {
     const body = await req.json()
-    const { nome, email, senha, nomeLavaJato, cidade, whatsapp } = body
+    const { nome, email, senha, nomeLavaJato, cidade, whatsapp, turnstileToken } = body
+
+    // Cloudflare Turnstile (no-op se TURNSTILE_SECRET_KEY não configurado)
+    const turnstileOk = await verifyTurnstile(turnstileToken, ip)
+    if (!turnstileOk) {
+      return NextResponse.json({ error: 'Validação anti-bot falhou' }, { status: 403 })
+    }
 
     // ── Validação server-side ──────────────────────────────────
     const errors: Record<string, string> = {}
