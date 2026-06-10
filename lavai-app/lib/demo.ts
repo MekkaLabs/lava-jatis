@@ -100,3 +100,35 @@ export const DEMO_AGENDAMENTOS = [
   { id: 'a5', cliente_nome: 'Juliana Costa',   servico_nome: 'Lavagem + Cera',   placa: 'PQR-1122', status: 'aguardando', preco_final: 90,  data_hora: d(1, 10) },
   { id: 'a6', cliente_nome: 'Marcos Andrade',  servico_nome: 'Cristalização',    placa: 'MNO-7890', status: 'aguardando', preco_final: 250, data_hora: d(2, 15) },
 ]
+
+// ── Estoque ──────────────────────────────────────────────────
+export const DEMO_ESTOQUE_CATEGORIAS = [
+  { id: 'ec1', nome: 'Produtos de limpeza' },
+  { id: 'ec2', nome: 'Acessórios' },
+  { id: 'ec3', nome: 'Ceras e polimentos' },
+]
+
+// qtd_atual <= estoque_minimo (e mínimo > 0) → item em alerta
+export const DEMO_ESTOQUE_ITENS = [
+  { id: 'i1', nome: 'Shampoo automotivo 5L', sku: 'SHP-5L',  unidade: 'L',  qtd_atual: 2,  estoque_minimo: 5,  custo: 38.9, ativo: true, categoria_id: 'ec1', categoria: { id: 'ec1', nome: 'Produtos de limpeza' } },
+  { id: 'i2', nome: 'Cera líquida 500ml',     sku: 'CRA-500', unidade: 'un', qtd_atual: 1,  estoque_minimo: 3,  custo: 24.5, ativo: true, categoria_id: 'ec3', categoria: { id: 'ec3', nome: 'Ceras e polimentos' } },
+  { id: 'i3', nome: 'Pano microfibra',         sku: 'PMF-01',  unidade: 'un', qtd_atual: 40, estoque_minimo: 10, custo: 6.0,  ativo: true, categoria_id: 'ec2', categoria: { id: 'ec2', nome: 'Acessórios' } },
+  { id: 'i4', nome: 'Detergente neutro 5L',    sku: 'DET-5L',  unidade: 'L',  qtd_atual: 8,  estoque_minimo: 4,  custo: 19.9, ativo: true, categoria_id: 'ec1', categoria: { id: 'ec1', nome: 'Produtos de limpeza' } },
+  { id: 'i5', nome: 'Pneu pretinho 1L',        sku: 'PRT-1L',  unidade: 'un', qtd_atual: 3,  estoque_minimo: 3,  custo: 15.0, ativo: true, categoria_id: 'ec3', categoria: { id: 'ec3', nome: 'Ceras e polimentos' } },
+]
+
+export const DEMO_ESTOQUE_MOVIMENTACOES = [
+  { id: 'm1', item_id: 'i1', tipo: 'saida',   quantidade: 3, motivo: 'Consumo do dia',      responsavel: 'João',  created_at: new Date(Date.now() - 2 * 86400000).toISOString(), item: { nome: 'Shampoo automotivo 5L', unidade: 'L' } },
+  { id: 'm2', item_id: 'i3', tipo: 'entrada', quantidade: 50, motivo: 'Compra fornecedor',  responsavel: 'Maria', created_at: new Date(Date.now() - 4 * 86400000).toISOString(), item: { nome: 'Pano microfibra', unidade: 'un' } },
+  { id: 'm3', item_id: 'i2', tipo: 'saida',   quantidade: 2, motivo: 'Serviço de polimento', responsavel: 'João', created_at: new Date(Date.now() - 1 * 86400000).toISOString(), item: { nome: 'Cera líquida 500ml', unidade: 'un' } },
+]
+
+// Serviços com todos os campos da aba "Serviços e valores"
+export const DEMO_SERVICOS_FULL = [
+  { id: 's1', nome: 'Lavagem Simples',   descricao: 'Lavagem externa rápida',           categoria: 'Lavagem',    preco: 30,  duracao_minutos: 20, ativo: true },
+  { id: 's2', nome: 'Lavagem Completa',  descricao: 'Externa + interna + aspiração',     categoria: 'Lavagem',    preco: 60,  duracao_minutos: 40, ativo: true },
+  { id: 's3', nome: 'Polimento',         descricao: 'Polimento técnico de pintura',      categoria: 'Estética',   preco: 150, duracao_minutos: 90, ativo: true },
+  { id: 's4', nome: 'Higienização',      descricao: 'Higienização interna completa',     categoria: 'Estética',   preco: 180, duracao_minutos: 120, ativo: true },
+  { id: 's5', nome: 'Lavagem + Cera',    descricao: 'Lavagem completa com enceramento',  categoria: 'Lavagem',    preco: 90,  duracao_minutos: 50, ativo: true },
+  { id: 's6', nome: 'Cristalização',     descricao: 'Cristalização de pintura',          categoria: 'Estética',   preco: 250, duracao_minutos: 180, ativo: false },
+]
