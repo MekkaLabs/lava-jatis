@@ -5,14 +5,15 @@ import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import WipBanner from '@/components/ui/WipBanner'
 import { IS_DEMO } from '@/lib/demo'
+import { createClient } from '@/lib/supabase'
 import { lavaJato } from '@/lib/mock-data'
 import {
   User, CreditCard, Bell, Plug, AlertTriangle, Check, X, Copy, Upload,
   ExternalLink, ChevronRight, Download, Trash2, ToggleLeft, ToggleRight,
-  CheckCircle, Clock, ZapOff, Zap,
+  CheckCircle, Clock, ZapOff, Zap, ShieldCheck, KeyRound, Loader2,
 } from 'lucide-react'
 
-type Tab = 'perfil' | 'plano' | 'notificacoes' | 'integracoes' | 'avancado'
+type Tab = 'perfil' | 'plano' | 'notificacoes' | 'integracoes' | 'seguranca' | 'avancado'
 
 // ── Toast ─────────────────────────────────────────────────────
 function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
@@ -441,6 +442,192 @@ function IntegracoesTab() {
   )
 }
 
+// ── Segurança Tab (2FA / TOTP) ────────────────────────────────
+type MfaStatus = 'loading' | 'none' | 'enrolling' | 'active'
+
+function SegurancaTab({ onToast }: { onToast: (msg: string) => void }) {
+  const [status, setStatus] = useState<MfaStatus>(IS_DEMO ? 'none' : 'loading')
+  const [factorId, setFactorId] = useState<string | null>(null)
+  const [qrCode, setQrCode] = useState('')
+  const [secret, setSecret] = useState('')
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [erro, setErro] = useState('')
+
+  // Carrega fatores existentes
+  useEffect(() => {
+    if (IS_DEMO) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.mfa.listFactors()
+        if (error) throw error
+        const verified = data?.totp?.find(f => f.status === 'verified')
+        if (cancelled) return
+        if (verified) { setFactorId(verified.id); setStatus('active') }
+        else setStatus('none')
+      } catch {
+        if (!cancelled) setStatus('none')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  async function iniciarEnroll() {
+    setErro(''); setBusy(true)
+    try {
+      const supabase = createClient()
+      // Remove fatores TOTP não-verificados pendentes (evita conflito de nome)
+      const { data: list } = await supabase.auth.mfa.listFactors()
+      for (const f of list?.totp ?? []) {
+        if (f.status !== 'verified') await supabase.auth.mfa.unenroll({ factorId: f.id })
+      }
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'LAVAI 2FA' })
+      if (error) throw error
+      setFactorId(data.id)
+      setQrCode(data.totp.qr_code)
+      setSecret(data.totp.secret)
+      setStatus('enrolling')
+    } catch (e: any) {
+      setErro(e?.message ?? 'Erro ao iniciar 2FA')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function verificarCodigo() {
+    if (!factorId || code.replace(/\D/g, '').length !== 6) { setErro('Digite o código de 6 dígitos.'); return }
+    setErro(''); setBusy(true)
+    try {
+      const supabase = createClient()
+      const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({ factorId })
+      if (chErr) throw chErr
+      const { error: vErr } = await supabase.auth.mfa.verify({ factorId, challengeId: ch.id, code: code.replace(/\D/g, '') })
+      if (vErr) throw vErr
+      setStatus('active'); setCode(''); setQrCode(''); setSecret('')
+      onToast('Autenticação em duas etapas ativada!')
+    } catch (e: any) {
+      setErro(e?.message ?? 'Código inválido. Tente novamente.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function cancelarEnroll() {
+    setBusy(true)
+    try {
+      const supabase = createClient()
+      if (factorId) await supabase.auth.mfa.unenroll({ factorId })
+    } catch { /* noop */ }
+    finally {
+      setFactorId(null); setQrCode(''); setSecret(''); setCode(''); setErro(''); setStatus('none'); setBusy(false)
+    }
+  }
+
+  async function desativar() {
+    if (!factorId) return
+    if (!confirm('Desativar a autenticação em duas etapas?')) return
+    setBusy(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.mfa.unenroll({ factorId })
+      if (error) throw error
+      setFactorId(null); setStatus('none')
+      onToast('2FA desativada.')
+    } catch (e: any) {
+      setErro(e?.message ?? 'Erro ao desativar 2FA')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const card = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' } as const
+
+  if (IS_DEMO) {
+    return (
+      <div className="rounded-2xl p-6" style={card}>
+        <div className="flex items-center gap-3 mb-2">
+          <ShieldCheck size={18} className="text-cyan-400" />
+          <h3 className="text-sm font-bold text-white">Autenticação em duas etapas (2FA)</h3>
+        </div>
+        <p className="text-sm text-gray-500">Disponível com conta real. No modo demo a 2FA fica desabilitada.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-2xl p-6 space-y-5" style={card}>
+      <div className="flex items-center gap-3">
+        <ShieldCheck size={18} className={status === 'active' ? 'text-green-400' : 'text-cyan-400'} />
+        <div>
+          <h3 className="text-sm font-bold text-white">Autenticação em duas etapas (2FA)</h3>
+          <p className="text-xs text-gray-500">Protege sua conta exigindo um código do app autenticador no login.</p>
+        </div>
+      </div>
+
+      {status === 'loading' && (
+        <p className="text-sm text-gray-500 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Carregando...</p>
+      )}
+
+      {status === 'active' && (
+        <div className="flex items-center justify-between rounded-xl p-4" style={{ background: 'rgba(0,230,118,0.07)', border: '1px solid rgba(0,230,118,0.2)' }}>
+          <span className="flex items-center gap-2 text-sm font-semibold text-green-400"><CheckCircle size={15} /> 2FA está ativa</span>
+          <button onClick={desativar} disabled={busy}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.25)' }}>
+            Desativar
+          </button>
+        </div>
+      )}
+
+      {status === 'none' && (
+        <button onClick={iniciarEnroll} disabled={busy}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg,#00d4ff,#4f8eff)' }}>
+          {busy ? <Loader2 size={15} className="animate-spin" /> : <KeyRound size={15} />} Ativar 2FA
+        </button>
+      )}
+
+      {status === 'enrolling' && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-300">1. Escaneie o QR code com seu app autenticador (Google Authenticator, Authy, 1Password):</p>
+          {qrCode && (
+            // qr_code do Supabase é um data-URI SVG — seguro renderizar direto
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={qrCode} alt="QR code 2FA" className="w-44 h-44 rounded-xl bg-white p-2" />
+          )}
+          {secret && (
+            <p className="text-xs text-gray-500">
+              Ou insira manualmente: <code className="text-cyan-400 break-all">{secret}</code>
+            </p>
+          )}
+          <p className="text-sm text-gray-300">2. Digite o código de 6 dígitos gerado:</p>
+          <input
+            value={code}
+            onChange={e => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setErro('') }}
+            inputMode="numeric" placeholder="000000" maxLength={6}
+            className="w-40 px-4 py-3 rounded-xl text-white text-lg tracking-[0.4em] text-center outline-none"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}
+          />
+          <div className="flex gap-3">
+            <button onClick={cancelarEnroll} disabled={busy}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              style={{ background: 'rgba(255,255,255,0.05)' }}>Cancelar</button>
+            <button onClick={verificarCodigo} disabled={busy || code.length !== 6}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg,#00d4ff,#4f8eff)' }}>
+              {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />} Verificar e ativar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {erro && <p className="text-sm text-red-400">{erro}</p>}
+    </div>
+  )
+}
+
 // ── Avançado Tab ──────────────────────────────────────────────
 function AvancadoTab() {
   const [excluirModal, setExcluirModal] = useState(false)
@@ -552,6 +739,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'plano', label: 'Plano', icon: <CreditCard size={15} /> },
   { key: 'notificacoes', label: 'Notificações', icon: <Bell size={15} /> },
   { key: 'integracoes', label: 'Integrações', icon: <Plug size={15} /> },
+  { key: 'seguranca', label: 'Segurança', icon: <ShieldCheck size={15} /> },
   { key: 'avancado', label: 'Avançado', icon: <AlertTriangle size={15} /> },
 ]
 
@@ -594,6 +782,7 @@ export default function ConfiguracoesPage() {
             {activeTab === 'plano' && <PlanoTab />}
             {activeTab === 'notificacoes' && <NotificacoesTab onSave={() => showToast('Preferências de notificação salvas!')} />}
             {activeTab === 'integracoes' && <IntegracoesTab />}
+            {activeTab === 'seguranca' && <SegurancaTab onToast={showToast} />}
             {activeTab === 'avancado' && <AvancadoTab />}
           </div>
         </main>

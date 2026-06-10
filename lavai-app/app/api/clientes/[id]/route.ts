@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const supabase = createServerSupabaseClient()
     const { data: cliente, error: dbErr } = await supabase
       .from('clientes')
-      .select('id, nome, telefone, email, cpf, created_at')
+      .select('id, nome, telefone, email, placa, modelo_veiculo, cor, pontos, total_atendimentos, total_gasto, ultima_visita, created_at')
       .eq('id', params.id)
       .eq('lava_jato_id', lavaJatoId)
       .single()
@@ -47,9 +47,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!validation.valid) return error(validation.errors.join('; '), 400)
 
     // Campos editáveis. Mapeia 'modelo' do form pra coluna 'modelo_veiculo' do banco.
-    const allowed = ['nome', 'telefone', 'email', 'cpf', 'placa', 'modelo_veiculo', 'cor'] as const
+    const allowed = ['nome', 'telefone', 'email', 'placa', 'modelo_veiculo', 'cor'] as const
     const limits: Record<string, number> = {
-      nome: 200, telefone: 30, email: 254, cpf: 30,
+      nome: 200, telefone: 30, email: 254,
       placa: 10, modelo_veiculo: 100, cor: 30,
     }
     const updates: Record<string, any> = {}

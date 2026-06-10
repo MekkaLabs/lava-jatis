@@ -4,6 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import TurnstileWidget from '@/components/TurnstileWidget'
+
+// Anti-bot: só ativa o widget se a site key pública estiver configurada.
+// Sem key → undefined → fluxo segue como hoje (backend em modo no-op).
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -93,6 +98,7 @@ export default function CadastroPage() {
   const [nomeLavaJato, setNomeLavaJato] = useState('')
   const [cidade, setCidade] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   function clearFieldError(field: string) {
     setFieldErrors(prev => { const next = { ...prev }; delete next[field]; return next })
@@ -120,13 +126,18 @@ export default function CadastroPage() {
     e.preventDefault()
     setGlobalError(null)
     if (!validate()) return
+    // Anti-bot: se o Turnstile está ativo, exige o token antes de enviar.
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setGlobalError('Confirme que você não é um robô para continuar.')
+      return
+    }
     setLoading(true)
 
     try {
       const res = await fetch('/api/cadastro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, email: email.trim().toLowerCase(), senha, nomeLavaJato, cidade, whatsapp }),
+        body: JSON.stringify({ nome, email: email.trim().toLowerCase(), senha, nomeLavaJato, cidade, whatsapp, turnstileToken }),
       })
 
       const json = await res.json()
@@ -137,6 +148,8 @@ export default function CadastroPage() {
         } else {
           setGlobalError(json.error ?? 'Erro ao criar conta. Tente novamente.')
         }
+        // Token Turnstile é single-use — limpa pra forçar nova verificação.
+        if (TURNSTILE_SITE_KEY) setTurnstileToken('')
         setLoading(false)
         return
       }
@@ -313,6 +326,17 @@ export default function CadastroPage() {
               />
               <FieldError msg={fieldErrors.whatsapp} />
             </div>
+
+            {/* Anti-bot (Turnstile) — só aparece se a site key estiver configurada */}
+            {TURNSTILE_SITE_KEY && (
+              <div className="pt-1">
+                <TurnstileWidget
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onVerify={setTurnstileToken}
+                  onExpire={() => setTurnstileToken('')}
+                />
+              </div>
+            )}
 
             {/* Erro global */}
             {globalError && (

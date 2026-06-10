@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const date = searchParams.get('date')
+    const from = searchParams.get('from')   // ISO — filtra por data_hora (agenda)
+    const to = searchParams.get('to')       // ISO — filtra por data_hora (agenda)
 
     // Validate status filter against allowed values
     const allowedStatus = ['aguardando', 'em_andamento', 'concluido', 'cancelado']
@@ -28,11 +30,15 @@ export async function GET(req: NextRequest) {
       return error('date deve estar no formato YYYY-MM-DD', 400)
     }
 
+    // Validate ISO range (agendamentos)
+    if (from && isNaN(Date.parse(from))) return error('from inválido', 400)
+    if (to && isNaN(Date.parse(to))) return error('to inválido', 400)
+
     let query = supabase
       .from('atendimentos')
       .select(`
         id, cliente_nome, placa, modelo, cor, status, preco_final,
-        observacao, created_at, updated_at, lava_jato_id,
+        observacao, data_hora, funcionario, created_at, updated_at, lava_jato_id,
         clientes(id, nome, telefone),
         servicos(id, nome, preco),
         funcionarios(id, nome)
@@ -47,6 +53,9 @@ export async function GET(req: NextRequest) {
         .gte('created_at', `${date}T00:00:00`)
         .lte('created_at', `${date}T23:59:59`)
     }
+    // Filtro de agenda: apenas atendimentos com data_hora dentro do intervalo
+    if (from) query = query.gte('data_hora', new Date(from).toISOString())
+    if (to) query = query.lte('data_hora', new Date(to).toISOString())
 
     const { data, error: dbErr } = await query
 
@@ -78,20 +87,32 @@ export async function POST(req: NextRequest) {
       return error(validation.errors.join('; '), 400)
     }
 
-    const { clienteId, clienteNome, servicoId, placa, modelo, cor, observacao } = body
+    const { clienteId, clienteNome, servicoId, placa, modelo, cor, observacao, dataHora, funcionario } = body
+
+    // data_hora é opcional (usado por agendamentos). Valida formato se enviado.
+    let dataHoraIso: string | null = null
+    if (dataHora) {
+      const ts = Date.parse(dataHora)
+      if (isNaN(ts)) return error('dataHora inválida', 400)
+      dataHoraIso = new Date(ts).toISOString()
+    }
 
     const supabase = createServerSupabaseClient()
 
-    // Get service price — verify it belongs to same lava_jato
+    // Get service name + price — verify it belongs to same lava_jato
+    // servico_nome e preco são NOT NULL na tabela; precisam ser resolvidos do serviço.
+    let servicoNome = 'Serviço'
     let precoBase = 0
     if (servicoId) {
       const { data: servico } = await supabase
         .from('servicos')
-        .select('preco')
+        .select('nome, preco')
         .eq('id', servicoId)
         .eq('lava_jato_id', lavaJatoId)
         .single()
-      precoBase = servico?.preco ?? 0
+      if (!servico) return error('Serviço não encontrado', 400)
+      servicoNome = servico.nome ?? 'Serviço'
+      precoBase = Number(servico.preco) ?? 0
     }
 
     // Resolve cliente name — verify ownership
@@ -105,6 +126,7 @@ export async function POST(req: NextRequest) {
         .single()
       nomeCliente = cliente?.nome ?? 'Cliente'
     }
+    if (!nomeCliente) nomeCliente = 'Cliente'
 
     const { data, error: dbErr } = await supabase
       .from('atendimentos')
@@ -113,11 +135,15 @@ export async function POST(req: NextRequest) {
         cliente_id: clienteId ?? null,
         cliente_nome: nomeCliente,
         servico_id: servicoId,
-        placa: placa ? sanitizeString(placa, 10).toUpperCase() : null,
+        servico_nome: servicoNome,       // NOT NULL na tabela
+        placa: placa ? sanitizeString(placa, 10).toUpperCase() : '',  // NOT NULL na tabela
         modelo: modelo ? sanitizeString(modelo, 100) : null,
         cor: cor ? sanitizeString(cor, 50) : null,
+        funcionario: funcionario ? sanitizeString(funcionario, 100) : null,
         observacao: observacao ? sanitizeString(observacao, 2000) : null,
         status: 'aguardando',
+        data_hora: dataHoraIso,
+        preco: precoBase,                // NOT NULL na tabela
         preco_final: precoBase,
       })
       .select()

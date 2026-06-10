@@ -11,7 +11,7 @@
 1. Ler `CLAUDE.md` — produto, stack, estrutura, padrões
 2. Ler este `HANDOFF.md` — estado atual + aprendizados
 3. Abrir o vault Obsidian → `LLM-CONNECT.md` + daily mais recente
-4. Tasks: 70 de 79 completas (ver seção "Tasks pendentes")
+4. Tasks: 73 de 79 completas (ver seção "Tasks pendentes")
 
 ---
 
@@ -98,12 +98,51 @@ npm start -- -H 0.0.0.0
 
 ---
 
-## ✅ Tasks pendentes (9 de 79)
+## ✅ Tasks pendentes (6 de 79)
 
 ### Bugs ainda abertos (eu consigo fazer)
-- **#70** `/clientes` nunca faz GET em produção — useState `[]` sem fetch. Lista vazia após F5. **PRÓXIMO P0.**
-- **#53** `/agendamentos` persistir (fetch + POST real, cadastrar cliente novo inline)
-- **#55** `/equipe` persistir funcionários novos (era limitação demo, agora Supabase real)
+- _(nenhum P0 de persistência aberto — #70/#53/#55 concluídos)_
+
+### ✅ Concluídas nesta sessão
+- **#70** `/clientes` GET real — **FEITO**. `useEffect` que pagina `GET /api/clientes` ao montar
+  (não-demo) + `rowToCustomer()` com agregados reais. Corrigido bug correlato: rotas de clientes
+  referenciavam coluna **`cpf` inexistente** (GET 500 / POST falha) → removido. `cor` faltava no
+  `SETUP_COMPLETO.sql` → adicionada (DB já tinha).
+- **#55** `/equipe` persistir — **JÁ ESTAVA FEITO**. Página já faz GET/POST/PATCH/DELETE reais via
+  `/api/funcionarios`; route usa só colunas reais (nome, cargo, telefone, salario). Sem mudança
+  necessária — apenas verificado.
+- **#53** `/agendamentos` persistir — **FEITO**. Reescrita completa:
+  - Página busca `GET /api/atendimentos?from=&to=` da semana visível e mapeia via
+    `atendimentoToAgendamento()`; refaz fetch ao trocar de semana e após salvar. WipBanner removido.
+  - Modal carrega **serviços/clientes/funcionários reais** (autocomplete de cliente) e faz
+    **POST real** em `/api/atendimentos` com `dataHora` (datetime local → ISO no servidor).
+  - **Fix crítico no POST `/api/atendimentos`** (estava QUEBRADO em produção — afetava Fila também):
+    a tabela exige `servico_nome`, `preco`, `placa` NOT NULL, mas o POST não setava `servico_nome`
+    nem `preco` e podia inserir `placa` nula → toda criação de OS daria 500. Agora resolve
+    nome+preço do serviço, seta os 3 campos, e aceita `dataHora`/`funcionario`.
+  - GET `/api/atendimentos` agora retorna `data_hora`/`funcionario` e aceita filtro `from`/`to`.
+- **Onboarding conectado** — **JÁ ESTAVA FEITO** (verificado): `/cadastro` → `/api/cadastro` cria
+  user Supabase (service role, email confirmado) + insere `lava_jatos` + seed de `SERVICOS_DEFAULTS`
+  (rollback do user se o lava_jato falhar) → login automático → `/dashboard`. Schema de `servicos`
+  conferido (insert usa `duracao_minutos`, existe). **Melhoria feita:** `/cadastro` agora é
+  **Turnstile-ready** — novo `components/TurnstileWidget.tsx` renderiza o captcha quando
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` está setada e envia `turnstileToken` (single-use, reset em falha).
+  Antes, ligar o `TURNSTILE_SECRET_KEY` em prod **quebraria o signup** (page nunca mandava token →
+  403). Sem key → widget não aparece, fluxo segue como hoje (backend no-op). CSP já libera
+  `challenges.cloudflare.com`.
+
+- **Relatório de funcionário** — **FEITO**. Vertical completo:
+  - `GET /api/funcionarios/relatorio?from=&to=` agrega OS concluídas por `funcionario` (texto):
+    nº OS, faturamento, ticket médio + totais. "Não atribuído" para OS sem funcionário.
+  - `NovaOSSheet` (Fila) agora tem seletor de **funcionário** → OS passam a ser atribuíveis
+    (antes só o agendamento atribuía; Fila não setava → relatório ficaria vazio).
+  - `/equipe`: seção "Relatório de Produtividade" com filtro de período (mês/30d/tudo) e
+    campo de **comissão %** (cálculo client-side sobre faturamento). Demo tem dataset representativo.
+
+⚠️ **Validação end-to-end no browser pendente** (clientes/agendamentos): tabelas `clientes` e
+`atendimentos` estão **VAZIAS em todos os tenants** e o teste autenticado exige login real do
+Supabase (demo está off). tsc + build passam (exit 0) e o shape dos INSERTs foi conferido contra
+o schema real. Teste sugerido logado: criar cliente → criar OS na Fila → criar agendamento → F5.
 
 ### Dependem do Gusta
 - **#17/18/19** Env vars no Vercel + deploy + smoke test (ver `VERCEL_ENV_SETUP.md`)
@@ -115,15 +154,31 @@ npm start -- -H 0.0.0.0
 
 ---
 
-## 🔒 Backlog de segurança (Cyber Chief — próximas 2 semanas)
+## 🔒 Backlog de segurança (Cyber Chief)
 
-Ordem recomendada (todos não-bloqueantes mas importantes pré-go-live):
-1. `safeJsonLd()` no layout (escape do JSON-LD) — defesa XSS
-2. Origin check no middleware pra POSTs (CSRF defense-in-depth) — cuidado com webhooks (Asaas/Z-API não mandam Origin)
-3. Tabela `admin_audit_log` + INSERT na RPC admin
-4. Reduzir JWT expiry pra 3600s no Supabase Dashboard
-5. CSP nonce-based (mata `unsafe-inline`) — 1 dia de trabalho
-6. TOTP MFA pros super-admins (Supabase Auth built-in)
+1. ✅ **FEITO** — escape do JSON-LD (`<` → `<`) no `layout.tsx`. Defesa XSS / future-proof.
+2. ✅ **FEITO** — Origin/Referer check no middleware p/ métodos mutantes em `/api/*`
+   (CSRF defense-in-depth). Webhooks (`/api/payments/webhook`, `/api/whatsapp/webhook`) isentos;
+   server-to-server sem Origin/Referer é permitido (CSRF exige browser).
+6. 🟡 **PARCIAL** — MFA TOTP: enrollment opt-in feito em `/configuracoes → Segurança`
+   (`SegurancaTab`): enroll → QR → verify (`supabase.auth.mfa.*`) + desativar. **Falta enforcement
+   no login** (desafio AAL2 em `app/login`) — deixado de fora de propósito (risco de lockout +
+   precisa teste logado). Hoje: ativar 2FA registra o fator mas login entra em AAL1 sem pedir código.
+   **Follow-up:** após login → `getAuthenticatorAssuranceLevel()`; se `nextLevel==='aal2'` pedir TOTP
+   (challenge+verify). Implementar+testar JUNTO com o deploy logado. Recuperação se travar: remover
+   o fator via Supabase Dashboard (service role).
+
+3. ⏳ Tabela `admin_audit_log` + INSERT na RPC admin — **adiado**: route admin é read-only hoje
+   (só `admin_list_lava_jatos`), valor baixo até existir mutação admin. Exige migration na DB.
+4. ⏳ Reduzir JWT expiry pra 3600s no Supabase Dashboard — **depende do Gusta** (dashboard).
+5. ⏳ CSP nonce-based (mata `unsafe-inline`/`unsafe-eval` em script-src) — ~1 dia, risco alto
+   (GA + SW + Next runtime). CSP base já é forte (object-src none, base-uri self, frame-ancestors
+   none, HSTS, COOP/CORP) no `next.config.js`.
+6. ⏳ TOTP MFA pros super-admins (Supabase Auth built-in) — maior, envolve UI de enrollment.
+
+### ✨ Melhoria correlata feita nesta sessão
+- `/clientes` → `ClienteDetail` agora busca **histórico real** via `GET /api/clientes/[id]`
+  (mock só no demo). Antes mostrava 5 OS falsas mesmo em produção ("teatro"). Loading + empty state.
 
 ---
 
@@ -152,4 +207,15 @@ cd ~/Documents/Claude/Projects/lava-jatis/lavai-app
 git log --oneline -3 && npm run build && npm start -- -H 0.0.0.0
 ```
 
-**Pendência aberta pra retomar:** task #70 (`/clientes` GET real) é o próximo P0 — sem ela, lista de clientes fica vazia após F5 em produção. Depois #53 e #55 (persistência agendamentos/equipe).
+**Pendência aberta pra retomar:** #70, #53 e #55 concluídas. Não há mais P0 de persistência.
+Restam tarefas que dependem do Gusta (env vars Vercel, deploy, Asaas/Resend/Z-API) e backlog de
+segurança. Próximo passo recomendado: **validação end-to-end logado** + deploy.
+
+**Commit pendente (rodar no terminal do Gusta):**
+```bash
+cd ~/Documents/Claude/Projects/lava-jatis
+rm -f .git/HEAD.lock .git/index.lock
+git add .
+git commit -m "fix: persistência real /clientes, /agendamentos + POST atendimentos (servico_nome/preco NOT NULL) [#70 #53 #55]"
+git push origin main
+```

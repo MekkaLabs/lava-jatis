@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const supabase = createServerSupabaseClient()
     let query = supabase
       .from('clientes')
-      .select('id, nome, telefone, email, cpf, created_at', { count: 'exact' })
+      .select('id, nome, telefone, email, placa, modelo_veiculo, cor, pontos, total_atendimentos, total_gasto, ultima_visita, created_at', { count: 'exact' })
       .eq('lava_jato_id', lavaJatoId)
       .order('nome', { ascending: true })
       .range(offset, offset + limit - 1)
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const validation = ClienteSchema.create(body)
     if (!validation.valid) return error(validation.errors.join('; '), 400)
 
-    const { nome, telefone, email, cpf, placa, modelo_veiculo, cor } = body
+    const { nome, telefone, email, placa, modelo_veiculo, cor } = body
 
     const supabase = createServerSupabaseClient()
     const { data, error: dbErr } = await supabase
@@ -64,7 +64,6 @@ export async function POST(req: NextRequest) {
         nome: sanitizeString(nome, 200),
         telefone: sanitizeString(telefone, 20),
         email: email ? sanitizeString(email, 254) : null,
-        cpf: cpf ? sanitizeString(cpf, 18) : null,
         placa: placa ? sanitizeString(placa, 10).toUpperCase() : null,
         modelo_veiculo: modelo_veiculo ? sanitizeString(modelo_veiculo, 100) : null,
         cor: cor ? sanitizeString(cor, 30) : null,

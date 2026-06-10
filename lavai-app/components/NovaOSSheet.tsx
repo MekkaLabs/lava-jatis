@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
-import { DEMO_SERVICOS, DEMO_CLIENTES, IS_DEMO } from '@/lib/demo'
+import { DEMO_SERVICOS, DEMO_CLIENTES, DEMO_FUNCIONARIOS, IS_DEMO } from '@/lib/demo'
 import { X, Check, Loader2, User, Search } from 'lucide-react'
 
 interface Servico { id: string; nome: string; preco: number }
+interface FuncOption { id: string; nome: string }
 interface Cliente {
   id: string
   nome: string
@@ -24,6 +25,8 @@ interface NovaOSSheetProps {
 export default function NovaOSSheet({ open, onClose, onCreated }: NovaOSSheetProps) {
   const [servicos, setServicos] = useState<Servico[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [funcionarios, setFuncionarios] = useState<FuncOption[]>([])
+  const [funcionarioNome, setFuncionarioNome] = useState('')
 
   // Cliente: autocomplete
   const [clienteQuery, setClienteQuery] = useState('')
@@ -47,15 +50,18 @@ export default function NovaOSSheet({ open, onClose, onCreated }: NovaOSSheetPro
     if (IS_DEMO) {
       setServicos(DEMO_SERVICOS as Servico[])
       setClientes(DEMO_CLIENTES as Cliente[])
+      setFuncionarios((DEMO_FUNCIONARIOS as any[]).map(f => ({ id: f.id, nome: f.nome })))
       return
     }
     const supabase = createClient()
     Promise.all([
       supabase.from('servicos').select('id, nome, preco').eq('ativo', true).order('nome'),
       supabase.from('clientes').select('id, nome, telefone, placa, modelo_veiculo, cor').order('nome'),
-    ]).then(([sRes, cRes]) => {
+      supabase.from('funcionarios').select('id, nome').order('nome'),
+    ]).then(([sRes, cRes, fRes]) => {
       setServicos((sRes.data as Servico[]) ?? [])
       setClientes((cRes.data as Cliente[]) ?? [])
+      setFuncionarios((fRes.data as FuncOption[]) ?? [])
     })
   }, [open])
 
@@ -64,7 +70,7 @@ export default function NovaOSSheet({ open, onClose, onCreated }: NovaOSSheetPro
     if (open) return
     const t = setTimeout(() => {
       setClienteQuery(''); setClienteSelecionado(null); setShowSuggestions(false)
-      setPlaca(''); setModelo(''); setCor(''); setServicoId('')
+      setPlaca(''); setModelo(''); setCor(''); setServicoId(''); setFuncionarioNome('')
       setSaving(false); setDone(false); setErro('')
     }, 300)
     return () => clearTimeout(t)
@@ -136,6 +142,7 @@ export default function NovaOSSheet({ open, onClose, onCreated }: NovaOSSheetPro
             placa: placa.trim().toUpperCase(),
             modelo: modelo.trim() || undefined,
             cor: cor.trim() || undefined,
+            funcionario: funcionarioNome || undefined,
           }),
         })
         if (!res.ok) {
@@ -301,6 +308,22 @@ export default function NovaOSSheet({ open, onClose, onCreated }: NovaOSSheetPro
                 ))}
               </select>
             </div>
+
+            {funcionarios.length > 0 && (
+              <div>
+                <label className="text-xs text-gray-400 font-medium mb-1 block">Funcionário</label>
+                <select
+                  className={inputCls} style={inputStyle}
+                  value={funcionarioNome}
+                  onChange={e => setFuncionarioNome(e.target.value)}
+                >
+                  <option value="">Sem funcionário definido</option>
+                  {funcionarios.map(f => (
+                    <option key={f.id} value={f.nome}>{f.nome}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {erro && <p className="text-sm text-red-400">{erro}</p>}
 

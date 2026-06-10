@@ -53,6 +53,36 @@ function isSuspiciousUA(ua: string | null): boolean {
   return BLOCKED_UA_PATTERNS.some(p => p.test(ua))
 }
 
+// ─── CSRF defense-in-depth: Origin/Referer check em requests mutantes ─────────
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+// Webhooks são server-to-server (sem Origin) — isentos por design.
+const ORIGIN_EXEMPT_PREFIXES = ['/api/payments/webhook', '/api/whatsapp/webhook']
+
+function isOriginExempt(pathname: string): boolean {
+  return ORIGIN_EXEMPT_PREFIXES.some(p => pathname.startsWith(p))
+}
+
+// Retorna true se a origem da request bate com o host (ou se não há sinal de browser).
+// Estratégia: se Origin presente, exige match; senão tenta Referer; sem nenhum
+// (server-to-server / cron / webhook) → permite (CSRF exige um browser, que envia Origin).
+function originAllowed(request: NextRequest): boolean {
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+  if (!host) return true // sem host não há como comparar — não bloqueia
+
+  const matchHost = (value: string | null): boolean | null => {
+    if (!value) return null
+    try { return new URL(value).host === host } catch { return false }
+  }
+
+  const byOrigin = matchHost(request.headers.get('origin'))
+  if (byOrigin !== null) return byOrigin
+
+  const byReferer = matchHost(request.headers.get('referer'))
+  if (byReferer !== null) return byReferer
+
+  return true
+}
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
@@ -68,6 +98,29 @@ export async function middleware(request: NextRequest) {
   const ua = request.headers.get('user-agent')
   if (isSuspiciousUA(ua)) {
     return new NextResponse('Forbidden', { status: 403 })
+  }
+
+  // CSRF defense-in-depth: requests mutantes em /api precisam de Origin/Referer
+  // do mesmo host (webhooks server-to-server são isentos).
+  if (
+    pathname.startsWith('/api') &&
+    MUTATING_METHODS.has(request.method) &&
+    !isOriginExempt(pathname) &&
+    !originAllowed(request)
+  ) {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        event: 'csrf.origin_mismatch',
+        ip,
+        path: pathname,
+        ts: Date.now(),
+      })
+    )
+    return new NextResponse(
+      JSON.stringify({ error: 'Origin not allowed' }),
+      { status: 403, headers: { 'Content-Type': 'application/json', ...SECURITY_HEADERS } }
+    )
   }
 
   // IP rate limiting on /api routes (skip health check)

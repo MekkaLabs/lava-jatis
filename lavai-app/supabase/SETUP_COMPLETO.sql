@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS clientes (
   total_atendimentos integer DEFAULT 0,
   total_gasto decimal(10,2) DEFAULT 0,
   ultima_visita timestamptz,
+  cor text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -140,6 +141,7 @@ ALTER TABLE clientes ADD COLUMN IF NOT EXISTS total_atendimentos integer DEFAULT
 ALTER TABLE clientes ADD COLUMN IF NOT EXISTS total_gasto decimal(10,2) DEFAULT 0;
 ALTER TABLE clientes ADD COLUMN IF NOT EXISTS ultima_visita timestamptz;
 ALTER TABLE clientes ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS cor text;
 
 
 -- ── atendimentos ─────────────────────────────────────────────

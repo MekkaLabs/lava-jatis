@@ -28,6 +28,25 @@ const demoCustomers: Customer[] = DEMO_CLIENTES.map(c => ({
   createdAt: c.created_at.slice(0, 10),
 }))
 
+// Mapeia uma linha da tabela `clientes` (Supabase) para o tipo Customer da UI
+function rowToCustomer(r: any): Customer {
+  const dataRef = (r.ultima_visita || r.created_at || '').slice(0, 10)
+  return {
+    id: r.id,
+    name: r.nome ?? '',
+    phone: r.telefone ?? '',
+    email: r.email ?? undefined,
+    plate: r.placa ?? '',
+    carModel: r.modelo_veiculo ?? '',
+    carColor: r.cor ?? '',
+    totalVisits: r.total_atendimentos ?? 0,
+    totalSpent: Number(r.total_gasto ?? 0),
+    lastVisit: dataRef,
+    loyaltyPoints: r.pontos ?? 0,
+    createdAt: (r.created_at ?? '').slice(0, 10),
+  }
+}
+
 const PAGE_SIZE = 20
 type SortField = 'nome' | 'cadastro' | 'atendimentos'
 type SortDir = 'asc' | 'desc'
@@ -177,22 +196,51 @@ function NovoClienteModal({ onClose, onSave, cliente }: NovoClienteModalProps) {
   )
 }
 
+interface HistoricoItem { id: string; data: string; servico: string; valor: number; status: string }
+
+const DEMO_HISTORICO: HistoricoItem[] = [
+  { id: 'os-1', data: '2026-05-14', servico: 'Lavagem Completa', valor: 120, status: 'concluido' },
+  { id: 'os-2', data: '2026-04-28', servico: 'Polimento', valor: 250, status: 'concluido' },
+  { id: 'os-3', data: '2026-04-10', servico: 'Lavagem Simples', valor: 60, status: 'concluido' },
+  { id: 'os-4', data: '2026-03-22', servico: 'Higienização Interna', valor: 180, status: 'concluido' },
+  { id: 'os-5', data: '2026-03-05', servico: 'Lavagem + Cera', valor: 150, status: 'cancelado' },
+]
+
 function ClienteDetail({ cliente, onClose, onEdit }: { cliente: Customer; onClose: () => void; onEdit?: () => void }) {
-  const mockHistory = [
-    { id: 'os-1', data: '2026-05-14', servico: 'Lavagem Completa', valor: 120, status: 'concluido' },
-    { id: 'os-2', data: '2026-04-28', servico: 'Polimento', valor: 250, status: 'concluido' },
-    { id: 'os-3', data: '2026-04-10', servico: 'Lavagem Simples', valor: 60, status: 'concluido' },
-    { id: 'os-4', data: '2026-03-22', servico: 'Higienização Interna', valor: 180, status: 'concluido' },
-    { id: 'os-5', data: '2026-03-05', servico: 'Lavagem + Cera', valor: 150, status: 'cancelado' },
-  ]
+  // Histórico real do cliente (mock só no demo). Antes mostrava OS falsas mesmo em produção.
+  const [historico, setHistorico] = useState<HistoricoItem[]>(IS_DEMO ? DEMO_HISTORICO : [])
+  const [loadingHist, setLoadingHist] = useState(!IS_DEMO)
+
+  useEffect(() => {
+    if (IS_DEMO) return
+    let cancelled = false
+    setLoadingHist(true)
+    fetch(`/api/clientes/${cliente.id}`)
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then(({ data }) => {
+        if (cancelled) return
+        const items: HistoricoItem[] = (data?.historico ?? []).map((h: any) => ({
+          id: h.id,
+          data: (h.created_at ?? '').slice(0, 10),
+          servico: h.servicos?.nome ?? '—',
+          valor: Number(h.preco_final ?? 0),
+          status: h.status ?? 'concluido',
+        }))
+        setHistorico(items)
+      })
+      .catch(e => { if (!cancelled) { console.error('Falha ao carregar histórico:', e); setHistorico([]) } })
+      .finally(() => { if (!cancelled) setLoadingHist(false) })
+    return () => { cancelled = true }
+  }, [cliente.id])
+
   const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     concluido: { label: 'Concluído', color: '#00e676', bg: 'rgba(0,230,118,0.12)' },
     cancelado: { label: 'Cancelado', color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
     em_andamento: { label: 'Em andamento', color: '#00d4ff', bg: 'rgba(0,212,255,0.12)' },
+    aguardando: { label: 'Aguardando', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
   }
   const nivel = cliente.totalVisits >= 20 ? 'Ouro' : cliente.totalVisits >= 10 ? 'Prata' : 'Bronze'
   const nivelColor = nivel === 'Ouro' ? '#fbbf24' : nivel === 'Prata' ? '#9ca3af' : '#cd7f32'
-  const totalHistorico = mockHistory.filter(o => o.status === 'concluido').reduce((s, o) => s + o.valor, 0)
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col overflow-hidden lg:relative lg:inset-auto lg:z-auto lg:w-[400px] lg:flex-shrink-0"
@@ -253,7 +301,11 @@ function ClienteDetail({ cliente, onClose, onEdit }: { cliente: Customer; onClos
         <div>
           <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Histórico de Atendimentos</p>
           <div className="space-y-2">
-            {mockHistory.map(os => {
+            {loadingHist ? (
+              <p className="text-xs text-gray-600 py-3 text-center">Carregando histórico...</p>
+            ) : historico.length === 0 ? (
+              <p className="text-xs text-gray-600 py-3 text-center">Nenhum atendimento registrado ainda.</p>
+            ) : historico.map(os => {
               const cfg = statusConfig[os.status] || statusConfig.concluido
               return (
                 <div key={os.id} className="flex items-center gap-3 p-3 rounded-xl"
@@ -295,9 +347,42 @@ export default function ClientesPage() {
     setEditingCliente(c)
     setShowModal(true)
   }
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(!IS_DEMO)
   const [clientes, setClientes] = useState<Customer[]>(IS_DEMO ? demoCustomers : [])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Carrega clientes reais do Supabase (task #70 — sem isso a lista fica vazia após F5)
+  useEffect(() => {
+    if (IS_DEMO) return
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      try {
+        const all: any[] = []
+        let pg = 1
+        const lim = 100
+        // Pagina até trazer todos (API limita a 100 por página)
+        for (;;) {
+          const res = await fetch(`/api/clientes?page=${pg}&limit=${lim}`)
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const json = await res.json()
+          const rows: any[] = json.data ?? []
+          all.push(...rows)
+          const total: number = json.total ?? all.length
+          if (rows.length < lim || all.length >= total) break
+          pg++
+        }
+        if (!cancelled) setClientes(all.map(rowToCustomer))
+      } catch (e) {
+        console.error('Falha ao carregar clientes:', e)
+        if (!cancelled) setClientes([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)

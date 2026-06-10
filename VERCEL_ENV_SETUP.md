@@ -104,3 +104,35 @@ Isso checa senhas contra HaveIBeenPwned ao cadastrar/trocar — bloqueia se a se
 | `/admin` retorna 403 | user_id não está em `super_admins` | Já promovi pelo MCP — confirme `select * from super_admins` |
 | Demo ainda aparece em prod | `NEXT_PUBLIC_LAVAI_DEMO_ENABLED=true` no Vercel | Mude pra `false` + Redeploy |
 | Webhook Asaas retorna 500 | `SUPABASE_SERVICE_ROLE_KEY` faltando | Setar em **Production** apenas |
+| Cadastro retorna 403 "anti-bot" | `TURNSTILE_SECRET_KEY` setada mas `NEXT_PUBLIC_TURNSTILE_SITE_KEY` ausente | Setar **as duas** ou **nenhuma** (ver abaixo) |
+| POST de integração externa → 403 "Origin not allowed" | Origin check do middleware (CSRF) | Esperado p/ cross-origin. Webhooks (`/api/payments/webhook`, `/api/whatsapp/webhook`) são isentos |
+
+---
+
+## 🔄 Atualizações 2026-06-02 (nova sessão)
+
+### Turnstile — regra de pareamento (IMPORTANTE)
+O `/cadastro` agora renderiza o captcha Cloudflare e envia o token. As duas chaves andam **juntas**:
+
+| Cenário | Resultado |
+|---------|-----------|
+| Nenhuma setada | ✅ Signup normal, sem captcha (backend no-op) — **estado atual, ok** |
+| **Ambas** setadas | ✅ Captcha ativo e validado |
+| Só `TURNSTILE_SECRET_KEY` | ❌ **Signup quebra** (page não manda token → 403). NÃO faça isso |
+| Só `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | ⚠️ Widget aparece mas backend não valida (inútil) |
+
+Regra: **set as duas ou nenhuma**. `NEXT_PUBLIC_TURNSTILE_SITE_KEY` precisa do scope que o build enxerga (Production + Preview).
+
+### Smoke test expandido (features novas desta sessão)
+Logado no domínio de produção:
+1. **/clientes** → "Novo Cliente" → salvar → **F5** → cliente persiste na lista (task #70)
+2. **/fila** → "Nova OS" → escolher serviço + **funcionário** → criar
+3. **/equipe** → seção "Relatório de Produtividade" → a OS acima aparece no funcionário (concluir a OS primeiro p/ contar faturamento)
+4. **/agendamentos** → "+" → cliente + serviço + data/hora → Agendar → **F5** → persiste (task #53)
+5. **/clientes** → abrir um cliente → "Histórico de Atendimentos" mostra OS **reais** (não mock)
+6. **/configuracoes → Segurança** → "Ativar 2FA" → escanear QR → digitar código → ativa
+   (login enforcement do 2FA ainda é follow-up — ver HANDOFF backlog #6)
+
+### SQL — nada novo obrigatório
+`SETUP_COMPLETO.sql` ganhou `ALTER TABLE clientes ADD COLUMN IF NOT EXISTS cor` (idempotente; a DB
+real já tinha a coluna). Não precisa rodar nada — mas se rodar de novo, é seguro.

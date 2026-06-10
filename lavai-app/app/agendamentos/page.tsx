@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
-import WipBanner from '@/components/ui/WipBanner'
-import { IS_DEMO, DEMO_CLIENTES, DEMO_AGENDAMENTOS } from '@/lib/demo'
+import { createClient } from '@/lib/supabase'
+import { IS_DEMO, DEMO_CLIENTES, DEMO_SERVICOS, DEMO_AGENDAMENTOS } from '@/lib/demo'
 import { getInitials, getAvatarColor, formatCurrency } from '@/lib/utils'
 import {
   ChevronLeft, ChevronRight, Plus, X, Clock, User, Car, Check,
@@ -26,8 +26,7 @@ interface Agendamento {
   preco: number
 }
 
-// ── Mock agendamentos ─────────────────────────────────────────
-const SERVICES = ['Lavagem Simples', 'Lavagem Completa', 'Polimento', 'Higienização Interna', 'Lavagem + Cera', 'Cristalização']
+// ── Demo helpers ──────────────────────────────────────────────
 const FUNCS = ['Carlos', 'Pedro', 'Ana', 'Marcos']
 
 function getWeekStart(date: Date): Date {
@@ -57,43 +56,26 @@ function demoToAgendamentos(): Agendamento[] {
   })
 }
 
-// Para modo com banco real: gera agendamentos aleatórios com dados locais (placeholder até integração real)
-function genMockAgendamentos(weekStart: Date): Agendamento[] {
-  const agds: Agendamento[] = []
-  const hours = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00']
-  const statuses: AgendStatus[] = ['confirmado', 'confirmado', 'confirmado', 'pendente', 'concluido']
-  // Usar DEMO_CLIENTES como base de nomes (seed determinística por nome)
-  const clienteNames = DEMO_CLIENTES.map(c => c.nome)
-
-  for (let day = 0; day < 7; day++) {
-    const d = new Date(weekStart)
-    d.setDate(d.getDate() + day)
-    const dateStr = d.toISOString().slice(0, 10)
-    // Seed determinística baseada no dia para evitar valores aleatórios a cada render
-    const seed = d.getDate() + d.getMonth() * 31
-    const slotCount = day < 5 ? (seed % 3) + 3 : (seed % 2) + 1
-    const usedHourIdxs = new Set<number>()
-
-    for (let s = 0; s < slotCount; s++) {
-      const hourIdx = (seed * (s + 1)) % hours.length
-      if (usedHourIdxs.has(hourIdx)) continue
-      usedHourIdxs.add(hourIdx)
-      const hora = hours[hourIdx]
-      const clienteIdx = (seed + s) % clienteNames.length
-      agds.push({
-        id: `ag-${dateStr}-${hora}`,
-        clienteNome: clienteNames[clienteIdx],
-        servico: SERVICES[(seed + s) % SERVICES.length],
-        data: dateStr,
-        hora,
-        duracao: [30, 60, 90, 120][(seed + s) % 4],
-        funcionario: FUNCS[(seed + s) % FUNCS.length],
-        status: statuses[(seed + s) % statuses.length],
-        preco: [60, 90, 120, 180, 250, 350][(seed + s) % 6],
-      })
-    }
+// Mapeia uma linha de `atendimentos` (com data_hora) para o tipo Agendamento da UI
+function atendimentoToAgendamento(a: any): Agendamento {
+  const dt = a.data_hora ? new Date(a.data_hora) : (a.created_at ? new Date(a.created_at) : new Date())
+  const statusMap: Record<string, AgendStatus> = {
+    aguardando: 'pendente',
+    em_andamento: 'confirmado',
+    concluido: 'concluido',
+    cancelado: 'cancelado',
   }
-  return agds
+  return {
+    id: a.id,
+    clienteNome: a.clientes?.nome ?? a.cliente_nome ?? 'Cliente',
+    servico: a.servicos?.nome ?? a.servico_nome ?? '—',
+    data: dt.toISOString().slice(0, 10),
+    hora: `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`,
+    duracao: 60,
+    funcionario: a.funcionarios?.nome ?? a.funcionario ?? '',
+    status: statusMap[a.status] ?? 'pendente',
+    preco: Number(a.preco_final ?? 0),
+  }
 }
 
 // ── Status config ──────────────────────────────────────────────
@@ -109,50 +91,119 @@ const HOURS = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','
 const WEEK_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
 // ── Novo Agendamento Modal ─────────────────────────────────────
-interface NovoModalProps { onClose: () => void; onSave: (a: Agendamento) => void; weekStart: Date }
+interface ClienteOpt { id: string; nome: string; telefone?: string | null; placa?: string | null; modelo_veiculo?: string | null; cor?: string | null }
+interface ServicoOpt { id: string; nome: string; preco: number }
+interface FuncOpt { id: string; nome: string }
 
-function NovoAgendamentoModal({ onClose, onSave, weekStart }: NovoModalProps) {
-  const [form, setForm] = useState({
-    clienteSearch: '', clienteNome: '', servico: SERVICES[0],
-    data: new Date().toISOString().slice(0, 10),
-    hora: '09:00', funcionario: FUNCS[0],
-  })
-  const [saving, setSaving] = useState(false)
-  const [clientResults, setClientResults] = useState<typeof DEMO_CLIENTES>([])
+// onSaved recebe um Agendamento no modo demo (append local); no modo real é chamado sem args
+// e a página refaz o fetch da semana.
+interface NovoModalProps { onClose: () => void; onSaved: (a?: Agendamento) => void; weekStart: Date }
+
+function NovoAgendamentoModal({ onClose, onSaved }: NovoModalProps) {
+  const [servicos, setServicos] = useState<ServicoOpt[]>([])
+  const [clientes, setClientes] = useState<ClienteOpt[]>([])
+  const [funcs, setFuncs] = useState<FuncOpt[]>([])
+
+  const [clienteQuery, setClienteQuery] = useState('')
+  const [clienteSel, setClienteSel] = useState<ClienteOpt | null>(null)
   const [showResults, setShowResults] = useState(false)
+  const [servicoId, setServicoId] = useState('')
+  const [data, setData] = useState(new Date().toISOString().slice(0, 10))
+  const [hora, setHora] = useState('09:00')
+  const [funcionario, setFuncionario] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState('')
 
-  function searchClientes(q: string) {
-    setForm(f => ({ ...f, clienteSearch: q, clienteNome: q }))
-    if (q.length > 1) {
-      setClientResults(DEMO_CLIENTES.filter(c => c.nome.toLowerCase().includes(q.toLowerCase())).slice(0, 5))
-      setShowResults(true)
-    } else {
-      setShowResults(false)
+  // Carrega serviços/clientes/funcionários reais (ou demo)
+  useEffect(() => {
+    if (IS_DEMO) {
+      setServicos(DEMO_SERVICOS as ServicoOpt[])
+      setClientes(DEMO_CLIENTES as ClienteOpt[])
+      setFuncs(FUNCS.map((n, i) => ({ id: `f-${i}`, nome: n })))
+      return
     }
+    const supabase = createClient()
+    Promise.all([
+      supabase.from('servicos').select('id, nome, preco').eq('ativo', true).order('nome'),
+      supabase.from('clientes').select('id, nome, telefone, placa, modelo_veiculo, cor').order('nome'),
+      supabase.from('funcionarios').select('id, nome').order('nome'),
+    ]).then(([s, c, f]) => {
+      setServicos((s.data as ServicoOpt[]) ?? [])
+      setClientes((c.data as ClienteOpt[]) ?? [])
+      setFuncs((f.data as FuncOpt[]) ?? [])
+    })
+  }, [])
+
+  const sugestoes = useMemo(() => {
+    const q = clienteQuery.trim().toLowerCase()
+    if (!q) return clientes.slice(0, 6)
+    return clientes
+      .filter(c => c.nome.toLowerCase().includes(q) || (c.telefone ?? '').toLowerCase().includes(q) || (c.placa ?? '').toLowerCase().includes(q))
+      .slice(0, 6)
+  }, [clienteQuery, clientes])
+
+  function escolherCliente(c: ClienteOpt) {
+    setClienteSel(c)
+    setClienteQuery(c.nome)
+    setShowResults(false)
+  }
+  function onClienteChange(v: string) {
+    setClienteQuery(v)
+    if (clienteSel && v !== clienteSel.nome) setClienteSel(null)
+    setShowResults(true)
   }
 
+  const nomeFinal = clienteSel?.nome ?? clienteQuery.trim()
+  const canSubmit = nomeFinal.length >= 2 && !!servicoId && !!data && !!hora
+
   async function handleSave() {
-    if (!form.clienteNome || !form.data || !form.hora) return
-    setSaving(true)
-    await new Promise(r => setTimeout(r, 600))
-    onSave({
-      id: `ag-${Date.now()}`,
-      clienteNome: form.clienteNome,
-      servico: form.servico,
-      data: form.data,
-      hora: form.hora,
-      duracao: 60,
-      funcionario: form.funcionario,
-      status: 'pendente',
-      preco: 90,
-    })
-    setSaving(false)
-    onClose()
+    if (!canSubmit || saving) return
+    setSaving(true); setErro('')
+    const servicoSel = servicos.find(s => s.id === servicoId)
+    try {
+      if (IS_DEMO) {
+        await new Promise(r => setTimeout(r, 400))
+        onSaved({
+          id: `ag-${Date.now()}`,
+          clienteNome: nomeFinal,
+          servico: servicoSel?.nome ?? 'Serviço',
+          data, hora, duracao: 60, funcionario,
+          status: 'pendente',
+          preco: Number(servicoSel?.preco ?? 0),
+        })
+        onClose()
+        return
+      }
+      const res = await fetch('/api/atendimentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clienteId: clienteSel?.id,
+          clienteNome: nomeFinal,
+          servicoId,
+          placa: clienteSel?.placa || undefined,
+          modelo: clienteSel?.modelo_veiculo || undefined,
+          cor: clienteSel?.cor || undefined,
+          funcionario: funcionario || undefined,
+          // datetime local (sem Z) → servidor converte pra ISO mantendo o horário de parede
+          dataHora: `${data}T${hora}:00`,
+        }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Erro ao agendar')
+      }
+      onSaved()
+      onClose()
+    } catch (e: any) {
+      setErro(e.message || 'Erro ao agendar')
+      setSaving(false)
+    }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }} onClick={onClose}>
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }} onClick={saving ? undefined : onClose}>
       <div className="rounded-2xl p-6 w-full max-w-md"
         style={{ background: '#0f1117', border: '1px solid rgba(255,255,255,0.12)' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
@@ -168,49 +219,58 @@ function NovoAgendamentoModal({ onClose, onSave, weekStart }: NovoModalProps) {
             </label>
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input type="text" value={form.clienteSearch} onChange={e => searchClientes(e.target.value)}
-                placeholder="Buscar cliente..." className="w-full pl-9 pr-4 py-3 rounded-xl text-sm text-white outline-none"
+              <input type="text" value={clienteQuery}
+                onChange={e => onClienteChange(e.target.value)}
+                onFocus={() => setShowResults(true)}
+                onBlur={() => setTimeout(() => setShowResults(false), 180)}
+                placeholder="Buscar por nome, telefone ou placa..." className="w-full pl-9 pr-4 py-3 rounded-xl text-sm text-white outline-none"
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
             </div>
-            {showResults && clientResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl overflow-hidden"
+            {showResults && sugestoes.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl overflow-hidden max-h-60 overflow-y-auto"
                 style={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.12)' }}>
-                {clientResults.map(c => (
-                  <button key={c.id} onClick={() => { setForm(f => ({ ...f, clienteSearch: c.nome, clienteNome: c.nome })); setShowResults(false) }}
+                {sugestoes.map(c => (
+                  <button key={c.id} type="button" onClick={() => escolherCliente(c)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${getAvatarColor(c.nome)}`}>
                       {getInitials(c.nome)}
                     </div>
-                    <div>
-                      <p className="text-sm text-white">{c.nome}</p>
-                      <p className="text-xs text-gray-500">{c.telefone ?? ''}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">{c.nome}</p>
+                      <p className="text-xs text-gray-500 truncate">{c.placa ?? '—'} {c.telefone ? `· ${c.telefone}` : ''}</p>
                     </div>
                   </button>
                 ))}
               </div>
             )}
+            {clienteQuery.length >= 2 && (
+              <p className="text-[11px] mt-1" style={{ color: clienteSel ? '#00d4ff' : '#ffd600' }}>
+                {clienteSel ? 'Cliente existente selecionado' : 'Cliente novo — agendamento registrado com este nome'}
+              </p>
+            )}
           </div>
 
           {/* Serviço */}
           <div>
-            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Serviço</label>
-            <select value={form.servico} onChange={e => setForm(f => ({ ...f, servico: e.target.value }))}
+            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Serviço <span className="text-red-400">*</span></label>
+            <select value={servicoId} onChange={e => setServicoId(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
               style={{ background: 'rgba(30,30,50,0.9)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              {SERVICES.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="">Selecione o serviço</option>
+              {servicos.map(s => <option key={s.id} value={s.id}>{s.nome} — R$ {Number(s.preco).toFixed(0)}</option>)}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Data</label>
-              <input type="date" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))}
+              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Data <span className="text-red-400">*</span></label>
+              <input type="date" value={data} onChange={e => setData(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
                 style={{ background: 'rgba(30,30,50,0.9)', border: '1px solid rgba(255,255,255,0.1)' }} />
             </div>
             <div>
-              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Hora</label>
-              <select value={form.hora} onChange={e => setForm(f => ({ ...f, hora: e.target.value }))}
+              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Hora <span className="text-red-400">*</span></label>
+              <select value={hora} onChange={e => setHora(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
                 style={{ background: 'rgba(30,30,50,0.9)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
@@ -220,19 +280,22 @@ function NovoAgendamentoModal({ onClose, onSave, weekStart }: NovoModalProps) {
 
           <div>
             <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block mb-2">Funcionário</label>
-            <select value={form.funcionario} onChange={e => setForm(f => ({ ...f, funcionario: e.target.value }))}
+            <select value={funcionario} onChange={e => setFuncionario(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
               style={{ background: 'rgba(30,30,50,0.9)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              {FUNCS.map(f => <option key={f} value={f}>{f}</option>)}
+              <option value="">Sem funcionário definido</option>
+              {funcs.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
             </select>
           </div>
+
+          {erro && <p className="text-sm text-red-400">{erro}</p>}
         </div>
 
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white transition-colors"
             style={{ background: 'rgba(255,255,255,0.05)' }}>Cancelar</button>
-          <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-3 rounded-xl text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-60"
+          <button onClick={handleSave} disabled={!canSubmit || saving}
+            className="flex-1 py-3 rounded-xl text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg,#00d4ff,#4f8eff)' }}>
             {saving ? 'Salvando...' : 'Agendar'}
           </button>
@@ -394,7 +457,9 @@ export default function AgendamentosPage() {
   const [weekStart, setWeekStart] = useState<Date>(getWeekStart(today))
   const [viewMode, setViewMode] = useState<'week' | 'list'>('week')
   const [showModal, setShowModal] = useState(false)
-  const [extraAgds, setExtraAgds] = useState<Agendamento[]>([])
+  const [extraAgds, setExtraAgds] = useState<Agendamento[]>([])   // só demo (append local)
+  const [realAgds, setRealAgds] = useState<Agendamento[]>([])      // banco real (semana visível)
+  const [loadingAgds, setLoadingAgds] = useState(!IS_DEMO)
 
   // Mobile: a grade semanal de 7 colunas é ilegível em 375px → default lista.
   useEffect(() => {
@@ -403,18 +468,43 @@ export default function AgendamentosPage() {
     }
   }, [])
 
-  // Em demo mode usa DEMO_AGENDAMENTOS centralizados.
-  // Fora do demo retorna [] (não inventar agendamentos fake — destrói confiança).
-  // TODO #53: fetchar de /api/atendimentos?week=... e persistir POST de novos.
-  const baseAgds = useMemo(
+  const weekEndExclusive = useMemo(() => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + 7); return d
+  }, [weekStart])
+
+  // #53: busca atendimentos com data_hora na semana visível (banco real)
+  const fetchWeek = useCallback(async () => {
+    if (IS_DEMO) return
+    setLoadingAgds(true)
+    try {
+      const from = weekStart.toISOString()
+      const to = weekEndExclusive.toISOString()
+      const res = await fetch(`/api/atendimentos?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setRealAgds((json.data ?? []).map(atendimentoToAgendamento))
+    } catch (e) {
+      console.error('Falha ao carregar agendamentos:', e)
+      setRealAgds([])
+    } finally {
+      setLoadingAgds(false)
+    }
+  }, [weekStart, weekEndExclusive])
+
+  useEffect(() => { fetchWeek() }, [fetchWeek])
+
+  // Demo: DEMO_AGENDAMENTOS + novos locais. Real: dados do banco da semana.
+  const demoAgds = useMemo(
     () => IS_DEMO ? demoToAgendamentos() : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [weekStart.toISOString()]
   )
-  const agendamentos = [...baseAgds, ...extraAgds.filter(a => {
-    const d = new Date(a.data)
-    return d >= weekStart && d < new Date(weekStart.getTime() + 7 * 86400000)
-  })]
+  const agendamentos = IS_DEMO
+    ? [...demoAgds, ...extraAgds.filter(a => {
+        const d = new Date(a.data)
+        return d >= weekStart && d < weekEndExclusive
+      })]
+    : realAgds
 
   function prevWeek() {
     const d = new Date(weekStart)
@@ -442,16 +532,10 @@ export default function AgendamentosPage() {
       <div className="flex-1 lg:ml-[240px] flex flex-col min-h-screen">
         <Header
           title="Agendamentos"
-          subtitle={`${totalWeek} agendamentos esta semana`}
+          subtitle={loadingAgds ? 'Carregando agendamentos...' : `${totalWeek} agendamentos esta semana`}
         />
 
         <main className="flex-1 p-4 lg:p-6 space-y-5">
-          {!IS_DEMO && (
-            <WipBanner taskRef="#53">
-              Esta tela ainda não persiste agendamentos no banco. Novos agendamentos somem ao recarregar.
-              Em desenvolvimento — em breve integrada com <code>/api/atendimentos</code>.
-            </WipBanner>
-          )}
           {/* Stats + Controls */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">
@@ -519,7 +603,10 @@ export default function AgendamentosPage() {
         <NovoAgendamentoModal
           weekStart={weekStart}
           onClose={() => setShowModal(false)}
-          onSave={a => { setExtraAgds(prev => [...prev, a]); setShowModal(false) }}
+          onSaved={a => {
+            if (a) setExtraAgds(prev => [...prev, a])  // demo: append local
+            else fetchWeek()                           // real: refaz o fetch da semana
+          }}
         />
       )}
     </div>

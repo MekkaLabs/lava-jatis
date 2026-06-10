@@ -132,7 +132,9 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          // Escapa '<' → < para neutralizar quebra de </script> e <!-- (defesa XSS).
+          // jsonLd é estático hoje, mas o escape protege caso passe a ter dados dinâmicos.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>

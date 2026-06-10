@@ -226,6 +226,49 @@ export default function EquipePage() {
 
   useEffect(() => { load() }, [load])
 
+  // ── Relatório de produtividade ──────────────────────────────
+  interface RelRow { nome: string; totalOS: number; faturamento: number; ticketMedio: number }
+  const [relatorio, setRelatorio] = useState<RelRow[]>([])
+  const [relTotals, setRelTotals] = useState<{ totalOS: number; totalFaturamento: number }>({ totalOS: 0, totalFaturamento: 0 })
+  const [relPeriodo, setRelPeriodo] = useState<'mes' | '30d' | 'tudo'>('mes')
+  const [relLoading, setRelLoading] = useState(!IS_DEMO)
+  const [comissaoPct, setComissaoPct] = useState(0)
+
+  const loadRelatorio = useCallback(async () => {
+    if (IS_DEMO) {
+      const demo: RelRow[] = (DEMO_FUNCIONARIOS as any[]).slice(0, 4).map((f, i) => {
+        const totalOS = [42, 31, 27, 18][i] ?? 10
+        const ticket = [55, 70, 48, 90][i] ?? 60
+        return { nome: f.nome, totalOS, faturamento: totalOS * ticket, ticketMedio: ticket }
+      })
+      setRelatorio(demo)
+      setRelTotals({
+        totalOS: demo.reduce((s, r) => s + r.totalOS, 0),
+        totalFaturamento: demo.reduce((s, r) => s + r.faturamento, 0),
+      })
+      return
+    }
+    setRelLoading(true)
+    try {
+      const now = new Date()
+      const qs = new URLSearchParams()
+      if (relPeriodo === 'mes') qs.set('from', new Date(now.getFullYear(), now.getMonth(), 1).toISOString())
+      else if (relPeriodo === '30d') qs.set('from', new Date(now.getTime() - 30 * 86400000).toISOString())
+      const res = await fetch(`/api/funcionarios/relatorio?${qs.toString()}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setRelatorio(json.data ?? [])
+      setRelTotals(json.totals ?? { totalOS: 0, totalFaturamento: 0 })
+    } catch (e) {
+      console.error('Falha ao carregar relatório:', e)
+      setRelatorio([]); setRelTotals({ totalOS: 0, totalFaturamento: 0 })
+    } finally {
+      setRelLoading(false)
+    }
+  }, [relPeriodo])
+
+  useEffect(() => { loadRelatorio() }, [loadRelatorio])
+
   const handleSaved = (f: Funcionario) => {
     setFuncionarios(prev => {
       const idx = prev.findIndex(x => x.id === f.id)
@@ -448,6 +491,90 @@ export default function EquipePage() {
               </div>
             </div>
           )}
+
+          {/* Relatório de produtividade */}
+          <div className="rounded-2xl p-5"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={16} className="text-cyan-400" />
+                <h2 className="text-sm font-bold text-white">Relatório de Produtividade</h2>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Comissão % */}
+                <label className="flex items-center gap-1.5 text-xs text-gray-400">
+                  Comissão
+                  <input type="number" min="0" max="100" step="0.5" value={comissaoPct}
+                    onChange={e => setComissaoPct(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                    className="w-16 px-2 py-1 rounded-lg text-white text-xs outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                  %
+                </label>
+                {/* Período */}
+                <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  {([['mes', 'Este mês'], ['30d', '30 dias'], ['tudo', 'Tudo']] as [typeof relPeriodo, string][]).map(([p, label]) => (
+                    <button key={p} onClick={() => setRelPeriodo(p)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${relPeriodo === p ? 'text-black' : 'text-gray-400 hover:text-white'}`}
+                      style={relPeriodo === p ? { background: 'linear-gradient(135deg,#00d4ff,#4f8eff)' } : {}}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {relLoading ? (
+              <p className="text-sm text-gray-600 py-8 text-center">Carregando relatório...</p>
+            ) : relatorio.length === 0 ? (
+              <p className="text-sm text-gray-600 py-8 text-center">
+                Nenhuma OS concluída no período. Atribua um funcionário ao criar/concluir uma OS para ver a produtividade aqui.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-xl p-3" style={{ background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.12)' }}>
+                    <p className="text-xs text-gray-500 mb-0.5">OS concluídas</p>
+                    <p className="text-xl font-bold text-cyan-400" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{relTotals.totalOS}</p>
+                  </div>
+                  <div className="rounded-xl p-3" style={{ background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.12)' }}>
+                    <p className="text-xs text-gray-500 mb-0.5">Faturamento</p>
+                    <p className="text-xl font-bold text-green-400" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{formatCurrency(relTotals.totalFaturamento)}</p>
+                  </div>
+                  {comissaoPct > 0 && (
+                    <div className="rounded-xl p-3" style={{ background: 'rgba(255,214,0,0.06)', border: '1px solid rgba(255,214,0,0.12)' }}>
+                      <p className="text-xs text-gray-500 mb-0.5">Comissão total ({comissaoPct}%)</p>
+                      <p className="text-xl font-bold text-yellow-400" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{formatCurrency(relTotals.totalFaturamento * comissaoPct / 100)}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="table-scroll">
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        {['Funcionário', 'OS', 'Faturamento', 'Ticket médio', ...(comissaoPct > 0 ? ['Comissão'] : [])].map(h => (
+                          <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {relatorio.map((r, i) => (
+                        <tr key={r.nome} style={{ borderBottom: i < relatorio.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                          <td className="px-3 py-3 text-sm font-semibold text-white">{r.nome}</td>
+                          <td className="px-3 py-3 text-sm text-gray-300">{r.totalOS}</td>
+                          <td className="px-3 py-3 text-sm font-semibold text-green-400">{formatCurrency(r.faturamento)}</td>
+                          <td className="px-3 py-3 text-sm text-gray-300">{formatCurrency(r.ticketMedio)}</td>
+                          {comissaoPct > 0 && (
+                            <td className="px-3 py-3 text-sm font-semibold text-yellow-400">{formatCurrency(r.faturamento * comissaoPct / 100)}</td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </main>
 
