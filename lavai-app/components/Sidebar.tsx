@@ -22,6 +22,7 @@ import {
   Calendar,
   Lightbulb,
   CreditCard,
+  Package,
 } from 'lucide-react'
 
 const navItems = [
@@ -31,6 +32,7 @@ const navItems = [
   { href: '/agendamentos', label: 'Agendamentos', icon: Calendar },
   { href: '/financeiro',   label: 'Financeiro',   icon: DollarSign },
   { href: '/equipe',       label: 'Equipe',       icon: UserCheck },
+  { href: '/estoque',      label: 'Estoque',      icon: Package },
   // Fidelidade removida do menu — dono decide manualmente quem ganha brinde
   { href: '/whatsapp',     label: 'WhatsApp',     icon: MessageCircle,  badge: 'PRO' },
   { href: '/insights',     label: 'Insights IA',  icon: Lightbulb,      badge: 'IA'  },

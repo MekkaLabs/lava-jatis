@@ -1,7 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
-import { IS_DEMO } from '@/lib/demo'
-import { Car, DollarSign, Users, Clock, Star } from 'lucide-react'
+import { IS_DEMO, DEMO_ESTOQUE_ITENS } from '@/lib/demo'
+import { isEstoqueBaixo, itensEmAlerta } from '@/lib/estoque'
+import { Car, DollarSign, Users, Clock, Star, AlertTriangle } from 'lucide-react'
 import DashboardHeader from './components/DashboardHeader'
 import MetricCard from './components/MetricCard'
 // RevenueChart removido por solicitação (relatório ajustes MVP)
@@ -50,6 +51,9 @@ function getDemoData() {
         { cliente_nome: 'Fernanda Lima', nota: 5, comentario: 'Sempre venho aqui!', created_at: new Date(Date.now() - 48 * 3600000).toISOString() },
       ],
     },
+    estoqueAlerta: itensEmAlerta(DEMO_ESTOQUE_ITENS as any).map((i: any) => ({
+      id: i.id, nome: i.nome, qtd_atual: i.qtd_atual, estoque_minimo: i.estoque_minimo, unidade: i.unidade,
+    })),
   }
 }
 
@@ -176,6 +180,16 @@ async function getDashboardData() {
     : null
   const npsRecentes = (npsRows ?? []).slice(0, 4)
 
+  // Estoque em alerta (saldo <= mínimo configurado)
+  const { data: estoqueRows } = await supabase
+    .from('estoque_itens')
+    .select('id, nome, qtd_atual, estoque_minimo, unidade')
+    .eq('lava_jato_id', lavaJatoId)
+    .eq('ativo', true)
+  const estoqueAlerta = itensEmAlerta((estoqueRows ?? []) as any).map((i: any) => ({
+    id: i.id, nome: i.nome, qtd_atual: i.qtd_atual, estoque_minimo: i.estoque_minimo, unidade: i.unidade,
+  }))
+
   return {
     nomeLavaJato: lavaJato.nome ?? 'Lava-Jato',
     atendimentosHoje: atendimentosHoje ?? 0,
@@ -186,6 +200,7 @@ async function getDashboardData() {
     receitaUltimos7Dias,
     sparklineReceita,
     nps: { media: npsMedia, total: npsTotal, recentes: npsRecentes },
+    estoqueAlerta,
   }
 }
 
@@ -217,6 +232,7 @@ export default async function DashboardPage() {
     receitaUltimos7Dias,
     sparklineReceita,
     nps,
+    estoqueAlerta,
   } = data
 
   const greeting = getGreeting()
@@ -314,6 +330,26 @@ export default async function DashboardPage() {
             tooltip="Veículos ativos na fila agora"
           />
         </div>
+
+        {/* Estoque baixo */}
+        {estoqueAlerta.length > 0 && (
+          <a href="/estoque" className="block rounded-2xl p-4 transition-colors hover:bg-white/[0.02]"
+            style={{ background: 'rgba(255,82,82,0.06)', border: '1px solid rgba(255,82,82,0.2)' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle size={16} className="text-red-400" />
+              <h2 className="text-sm font-bold text-red-400">Estoque baixo ({estoqueAlerta.length})</h2>
+              <span className="text-xs text-gray-500 ml-auto">Ver estoque →</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {estoqueAlerta.map((i: any) => (
+                <span key={i.id} className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                  style={{ background: 'rgba(255,82,82,0.12)', color: '#ff8a8a', border: '1px solid rgba(255,82,82,0.2)' }}>
+                  {i.nome}: {i.qtd_atual}/{i.estoque_minimo} {i.unidade}
+                </span>
+              ))}
+            </div>
+          </a>
+        )}
 
         {/* Main grid */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
