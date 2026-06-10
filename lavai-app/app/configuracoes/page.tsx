@@ -4,16 +4,18 @@ import { useState, useRef, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import WipBanner from '@/components/ui/WipBanner'
-import { IS_DEMO } from '@/lib/demo'
+import { IS_DEMO, DEMO_SERVICOS_FULL } from '@/lib/demo'
 import { createClient } from '@/lib/supabase'
 import { lavaJato } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/utils'
 import {
   User, CreditCard, Bell, Plug, AlertTriangle, Check, X, Copy, Upload,
   ExternalLink, ChevronRight, Download, Trash2, ToggleLeft, ToggleRight,
   CheckCircle, Clock, ZapOff, Zap, ShieldCheck, KeyRound, Loader2,
+  Wrench, Plus, Pencil,
 } from 'lucide-react'
 
-type Tab = 'perfil' | 'plano' | 'notificacoes' | 'integracoes' | 'seguranca' | 'avancado'
+type Tab = 'perfil' | 'plano' | 'notificacoes' | 'integracoes' | 'servicos' | 'seguranca' | 'avancado'
 
 // ── Toast ─────────────────────────────────────────────────────
 function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
@@ -733,12 +735,183 @@ function AvancadoTab() {
   )
 }
 
+// ── Serviços e valores Tab ────────────────────────────────────
+interface Servico {
+  id: string
+  nome: string
+  descricao?: string | null
+  categoria?: string | null
+  preco: number
+  duracao_minutos?: number | null
+  ativo: boolean
+}
+
+function ServicoModal({ servico, onClose, onSaved, isDemo }: {
+  servico?: Servico | null; onClose: () => void; onSaved: (s: Servico) => void; isDemo: boolean
+}) {
+  const isEdit = !!servico
+  const [form, setForm] = useState({
+    nome: servico?.nome ?? '',
+    descricao: servico?.descricao ?? '',
+    categoria: servico?.categoria ?? '',
+    preco: servico?.preco != null ? String(servico.preco) : '',
+    duracao_minutos: servico?.duracao_minutos != null ? String(servico.duracao_minutos) : '30',
+    ativo: servico?.ativo ?? true,
+  })
+  const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState('')
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  async function handleSubmit() {
+    if (!form.nome.trim()) { setErro('Nome é obrigatório'); return }
+    const preco = Number(form.preco)
+    if (form.preco === '' || isNaN(preco) || preco < 0) { setErro('Preço deve ser maior ou igual a zero'); return }
+    setSaving(true); setErro('')
+    if (isDemo) {
+      await new Promise(r => setTimeout(r, 400))
+      onSaved({
+        id: isEdit ? servico!.id : `demo-s-${Date.now()}`,
+        nome: form.nome.trim(), descricao: form.descricao.trim() || null, categoria: form.categoria.trim() || null,
+        preco, duracao_minutos: Number(form.duracao_minutos) || 0, ativo: form.ativo,
+      })
+      onClose(); setSaving(false); return
+    }
+    try {
+      const url = isEdit ? `/api/servicos/${servico!.id}` : '/api/servicos'
+      const res = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: form.nome.trim(), descricao: form.descricao.trim() || null, categoria: form.categoria.trim() || null, preco, duracao_minutos: Number(form.duracao_minutos) || 0, ativo: form.ativo }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Erro desconhecido')
+      onSaved(json.data); onClose()
+    } catch (e: any) { setErro(e.message) } finally { setSaving(false) }
+  }
+
+  const inputCls = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:ring-1 focus:ring-cyan-400/50'
+  const inputSt = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' } as const
+  const lbl = 'text-xs text-gray-400 font-medium block mb-1'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl p-6" style={{ background: '#0d0f1a', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-white">{isEdit ? 'Editar Serviço' : 'Novo Serviço'}</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-white"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div><label className={lbl}>Nome *</label><input value={form.nome} onChange={set('nome')} placeholder="Lavagem Completa" className={inputCls} style={inputSt} /></div>
+          <div><label className={lbl}>Descrição</label><input value={form.descricao} onChange={set('descricao')} placeholder="Externa + interna + aspiração" className={inputCls} style={inputSt} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={lbl}>Preço (R$) *</label><input type="number" min="0" step="0.01" value={form.preco} onChange={set('preco')} placeholder="60.00" className={inputCls} style={inputSt} /></div>
+            <div><label className={lbl}>Duração (min)</label><input type="number" min="0" step="1" value={form.duracao_minutos} onChange={set('duracao_minutos')} placeholder="40" className={inputCls} style={inputSt} /></div>
+          </div>
+          <div><label className={lbl}>Categoria</label><input value={form.categoria} onChange={set('categoria')} placeholder="Lavagem, Estética..." className={inputCls} style={inputSt} /></div>
+          <button onClick={() => setForm(p => ({ ...p, ativo: !p.ativo }))} className="flex items-center gap-2 text-sm font-semibold" style={{ color: form.ativo ? '#00e676' : '#9ca3af' }}>
+            {form.ativo ? <ToggleRight size={20} /> : <ToggleLeft size={20} />} {form.ativo ? 'Ativo' : 'Inativo'}
+          </button>
+        </div>
+        {erro && <p className="text-red-400 text-xs mt-3">{erro}</p>}
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>Cancelar</button>
+          <button onClick={handleSubmit} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-black hover:opacity-90 disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #00d4ff, #4f8eff)' }}>
+            {saving ? 'Salvando...' : isEdit ? 'Salvar' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ServicosTab({ onToast }: { onToast: (msg: string) => void }) {
+  const [servicos, setServicos] = useState<Servico[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<Servico | null>(null)
+
+  useEffect(() => {
+    (async () => {
+      if (IS_DEMO) { setServicos(DEMO_SERVICOS_FULL as any); setLoading(false); return }
+      try { const res = await fetch('/api/servicos'); const json = await res.json(); setServicos(json.data ?? []) }
+      catch { /* silent */ } finally { setLoading(false) }
+    })()
+  }, [])
+
+  const handleSaved = (s: Servico) => {
+    setServicos(prev => { const i = prev.findIndex(x => x.id === s.id); if (i >= 0) { const n = [...prev]; n[i] = s; return n } return [s, ...prev] })
+    onToast(editTarget ? 'Serviço atualizado!' : 'Serviço adicionado!')
+  }
+
+  const toggleAtivo = async (s: Servico) => {
+    const novo = !s.ativo
+    setServicos(prev => prev.map(x => x.id === s.id ? { ...x, ativo: novo } : x))
+    if (IS_DEMO) { onToast(novo ? 'Serviço ativado.' : 'Serviço desativado.'); return }
+    try {
+      const res = await fetch(`/api/servicos/${s.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ativo: novo }) })
+      if (!res.ok) throw new Error()
+      onToast(novo ? 'Serviço ativado.' : 'Serviço desativado.')
+    } catch { setServicos(prev => prev.map(x => x.id === s.id ? { ...x, ativo: s.ativo } : x)); onToast('Erro ao atualizar serviço.') }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Remover este serviço?')) return
+    if (IS_DEMO) { setServicos(prev => prev.filter(s => s.id !== id)); onToast('Serviço removido.'); return }
+    try { const res = await fetch(`/api/servicos/${id}`, { method: 'DELETE' }); if (!res.ok) throw new Error(); setServicos(prev => prev.filter(s => s.id !== id)); onToast('Serviço removido.') }
+    catch { onToast('Erro ao remover serviço.') }
+  }
+
+  const card = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' } as const
+
+  return (
+    <div className="rounded-2xl p-6" style={card}>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2"><Wrench size={16} className="text-cyan-400" /><h3 className="text-sm font-bold text-white">Serviços e valores</h3></div>
+        <button onClick={() => { setEditTarget(null); setShowModal(true) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-black hover:opacity-90" style={{ background: 'linear-gradient(135deg, #00d4ff, #4f8eff)' }}>
+          <Plus size={14} /> Novo serviço
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-gray-500 py-8 text-center flex items-center justify-center gap-2"><Loader2 size={14} className="animate-spin" /> Carregando serviços...</p>
+      ) : servicos.length === 0 ? (
+        <div className="py-12 text-center"><p className="text-3xl mb-2">🧼</p><p className="text-gray-400 text-sm">Nenhum serviço cadastrado.</p><p className="text-gray-600 text-xs mt-1">Clique em "Novo serviço" para começar.</p></div>
+      ) : (
+        <div className="space-y-2">
+          {servicos.map(s => (
+            <div key={s.id} className="flex items-center gap-3 rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-white truncate">{s.nome}</span>
+                  {!s.ativo && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(156,163,175,0.15)', color: '#9ca3af' }}>INATIVO</span>}
+                  {s.categoria && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,212,255,0.1)', color: '#00d4ff' }}>{s.categoria}</span>}
+                </div>
+                {s.descricao && <p className="text-xs text-gray-500 truncate mt-0.5">{s.descricao}</p>}
+              </div>
+              <span className="text-sm font-bold text-green-400 flex-shrink-0">{formatCurrency(s.preco)}</span>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => toggleAtivo(s)} title={s.ativo ? 'Desativar' : 'Ativar'} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: s.ativo ? '#00e676' : '#9ca3af' }}>
+                  {s.ativo ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                </button>
+                <button onClick={() => { setEditTarget(s); setShowModal(true) }} title="Editar" className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: '#00d4ff', background: 'rgba(0,212,255,0.1)' }}><Pencil size={14} /></button>
+                <button onClick={() => handleDelete(s.id)} title="Remover" className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: '#ff5252', background: 'rgba(255,82,82,0.1)' }}><Trash2 size={14} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && <ServicoModal servico={editTarget} onClose={() => { setShowModal(false); setEditTarget(null) }} onSaved={handleSaved} isDemo={IS_DEMO} />}
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'perfil', label: 'Perfil', icon: <User size={15} /> },
   { key: 'plano', label: 'Plano', icon: <CreditCard size={15} /> },
   { key: 'notificacoes', label: 'Notificações', icon: <Bell size={15} /> },
   { key: 'integracoes', label: 'Integrações', icon: <Plug size={15} /> },
+  { key: 'servicos', label: 'Serviços e valores', icon: <Wrench size={15} /> },
   { key: 'seguranca', label: 'Segurança', icon: <ShieldCheck size={15} /> },
   { key: 'avancado', label: 'Avançado', icon: <AlertTriangle size={15} /> },
 ]
@@ -782,6 +955,7 @@ export default function ConfiguracoesPage() {
             {activeTab === 'plano' && <PlanoTab />}
             {activeTab === 'notificacoes' && <NotificacoesTab onSave={() => showToast('Preferências de notificação salvas!')} />}
             {activeTab === 'integracoes' && <IntegracoesTab />}
+            {activeTab === 'servicos' && <ServicosTab onToast={showToast} />}
             {activeTab === 'seguranca' && <SegurancaTab onToast={showToast} />}
             {activeTab === 'avancado' && <AvancadoTab />}
           </div>
